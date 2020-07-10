@@ -1,0 +1,25 @@
+{
+  "name": "ecs",
+  "version": "0.0.0",
+  "description": "> TODO: description",
+  "author": "Jakub Stawiarski <jakub.stawiarski@vattenfall.com>",
+  "homepage": "",
+  "license": "ISC",
+  "main": "lib/ecs.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "test": "jest --config ../../jest.config.json --rootDir .",
+    "tsc": "tsc"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.4",
+    "jest": "^26.1.0",
+    "ts-jest": "^26.1.1"
+  }
+}
