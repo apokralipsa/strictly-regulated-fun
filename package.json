@@ -7,7 +7,7 @@
     "typescript": "^3.9.6"
   },
   "scripts": {
-    "tsc": "tsc",
+    "build": "lerna run tsc && lerna bootstrap",
     "benchmark": "lerna run benchmark"
   }
 }
