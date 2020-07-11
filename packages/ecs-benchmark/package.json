@@ -1,0 +1,24 @@
+{
+  "name": "ecs-benchmark",
+  "version": "0.0.0",
+  "description": "> TODO: description",
+  "author": "Jakub Stawiarski <jakub.stawiarski@vattenfall.com>",
+  "homepage": "",
+  "license": "ISC",
+  "main": "lib/ecs-benchmark.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "tsc": "tsc",
+    "benchmark": "tsc && node lib/ecs-benchmark.js"
+  },
+  "dependencies": {
+    "benchmark": "^2.1.4",
+    "ecs": "^0.0.0"
+  }
+}

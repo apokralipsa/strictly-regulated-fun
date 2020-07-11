@@ -22,16 +22,16 @@ export class Entity {
     return this;
   }
 
-  setFlag(flag: Flag){
+  setFlag(flag: Flag) {
     this.components.set(flag, null);
     return this;
   }
 
   get<T>(component: Component<T>): Readonly<T> {
-    let data = this.components.get(component);
-    if (!data) {
+    if (!this.components.has(component)) {
       throw new Error(`Entity does not contain the requested component`);
     }
+    let data = this.components.get(component);
     return data as Readonly<T>;
   }
 

@@ -70,5 +70,6 @@ describe("Entity", () => {
   it("should allow to set a flag without passing any data", () => {
     entity.setFlag(dirty);
     expect(entity.has(dirty)).toBe(true);
+    expect(() => entity.get(dirty)).not.toThrow();
   });
 });
