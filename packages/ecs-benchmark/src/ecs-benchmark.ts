@@ -114,7 +114,6 @@ function runTest(test: { fn: () => number; name: string; updates: any }) {
     total += test.fn();
   }
 
-  const avg = total / TEST_COUNT;
   console.log(
     test.name +
       ": " +
@@ -128,13 +127,11 @@ function runTest(test: { fn: () => number; name: string; updates: any }) {
 console.log("Create and update");
 runTest(createAddUpdateTest(my_ecs));
 
+console.log("\nCreate, update and destroy");
+runTest(createAddUpdateDestroyTest(my_ecs));
 
-// TODO: uncomment once removing entities is done
-// console.log("\nCreate, update and destroy");
-// runTest(createAddUpdateDestroyTest(my_ecs));
-//
-// console.log("\nCreate, update, destroy and remove components");
-// runTest(createAddUpdateDestroyRemoveTest(my_ecs));
-//
-// console.log("\nCreate, update, destroy and add components");
-// runTest(createAddUpdateDestroyCreateTest(my_ecs));
+console.log("\nCreate, update, destroy and remove components");
+runTest(createAddUpdateDestroyRemoveTest(my_ecs));
+
+console.log("\nCreate, update, destroy and add components");
+runTest(createAddUpdateDestroyCreateTest(my_ecs));

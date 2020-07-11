@@ -68,13 +68,17 @@ export const my_ecs = {
     return [e1, e2, e3, e4];
   },
   removeEntities: (entities: any[]) => {
-    // TODO: implement removing entities
+    for (const entity of entities) {
+      engine.remove(entity);
+    }
   },
   removeVelocity: (entities: any[]) => {
-    // TODO: implement removing components
+    for (const entity of entities) {
+      entity.remove(velocity);
+    }
   },
   addVelocity: (entity) => {
-    entity.set(velocity, {x: 1, y: 1})
+    entity.set(velocity, { x: 1, y: 1 });
   },
   update: () => {
     engine.tick();

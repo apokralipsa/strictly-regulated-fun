@@ -54,7 +54,7 @@ describe("A system that acts on a component", () => {
   let engine: Engine;
   let position: Component<Position>;
 
-  let expectedEntity: Entity;
+  let matchingEntity: Entity;
   let differentEntity: Entity;
 
   let receivedEntities: Entity[];
@@ -81,7 +81,7 @@ describe("A system that acts on a component", () => {
       clock.uninstall();
     });
 
-    expectedEntity = engine.createEntity().set(position, { x: 1, y: 1 });
+    matchingEntity = engine.createEntity().set(position, { x: 1, y: 1 });
     differentEntity = engine.createEntity();
   });
 
@@ -92,7 +92,7 @@ describe("A system that acts on a component", () => {
   });
 
   it("should receive the correct entities and data", () => {
-    expect(receivedEntities).toEqual([expectedEntity]);
+    expect(receivedEntities).toEqual([matchingEntity]);
     expect(receivedData).toEqual([{ x: 1, y: 1 }]);
   });
 
@@ -109,11 +109,38 @@ describe("A system that acts on a component", () => {
     });
 
     it("should receive the same entity again", () => {
-      expect(receivedEntities).toEqual([expectedEntity, expectedEntity]);
+      expect(receivedEntities).toEqual([matchingEntity, matchingEntity]);
     });
 
     it("should be informed that some time has passed", () => {
       expect(receivedDeltaTime).toBe(passedMillis);
+    });
+  });
+
+  describe("when an entity is removed", () => {
+    let previouslyReceivedEntities: Entity[];
+    beforeEach(() => {
+      previouslyReceivedEntities = [...receivedEntities];
+      engine.remove(matchingEntity);
+      engine.tick();
+    });
+
+    it("should no longer receive it", () => {
+      expect(receivedEntities).toEqual(previouslyReceivedEntities);
+    });
+  });
+
+  describe('when the component is removed from that entity', () => {
+    let previouslyReceivedEntities: Entity[];
+
+    beforeEach(() => {
+      previouslyReceivedEntities = [...receivedEntities];
+      matchingEntity.remove(position)
+      engine.tick();
+    });
+
+    it("should no longer receive it", () => {
+      expect(receivedEntities).toEqual(previouslyReceivedEntities);
     });
   });
 });

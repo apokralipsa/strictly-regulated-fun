@@ -38,4 +38,8 @@ export class Entity {
   has(component: Component<any>): boolean {
     return this.components.has(component);
   }
+
+  remove(component: Component<any>) {
+    this.components.delete(component);
+  }
 }

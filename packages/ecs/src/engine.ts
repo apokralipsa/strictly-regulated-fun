@@ -6,6 +6,7 @@ export interface Engine {
   createEntity(): Entity;
   defineSystem<T>(system: System<T>): Engine;
   tick(): void;
+  remove(entity: Entity): void;
 }
 
 export interface EngineConfig {
@@ -22,15 +23,19 @@ export function createEngine(config: Partial<EngineConfig> = {}): Engine {
 
 class NaiveEngine implements Engine {
   private systems: System<any>[] = [];
-  private entities: Entity[] = [];
+  private entities: Set<Entity> = new Set();
   private lastTickTime = this.tickTime();
 
   constructor(private config: EngineConfig) {}
 
   createEntity(): Entity {
     const entity = new Entity(this.config.typeChecks);
-    this.entities = [...this.entities, entity];
+    this.entities.add(entity);
     return entity;
+  }
+
+  remove(entity: Entity): void {
+    this.entities.delete(entity);
   }
 
   tick(): void {
