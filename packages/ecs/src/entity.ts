@@ -11,12 +11,24 @@ export const DoRuntimeTypeChecks: RuntimeTypeCheck = (component, input) => {
   }
 };
 
+export type ComponentChangeCallback = (
+  entity: Entity,
+  component: Component<any>
+) => void;
+
 export class Entity {
   private readonly components: Map<Component<any>, any> = new Map();
+
+  private onAddedCallbacks: ComponentChangeCallback[] = [];
+  private onRemovedCallbacks: ComponentChangeCallback[] = [];
 
   constructor(private checkType: RuntimeTypeCheck = DoRuntimeTypeChecks) {}
 
   set<T>(component: Component<T>, data: T): Entity {
+    if (this.onAddedCallbacks.length > 0 && !this.has(component)) {
+      this.onAddedCallbacks.forEach((callback) => callback(this, component));
+    }
+
     this.checkType(component, data);
     this.components.set(component, data);
     return this;
@@ -40,6 +52,18 @@ export class Entity {
   }
 
   remove(component: Component<any>) {
+    if (this.onRemovedCallbacks.length > 0 && this.has(component)) {
+      this.onRemovedCallbacks.forEach((callback) => callback(this, component));
+    }
+
     this.components.delete(component);
+  }
+
+  onComponentAdded(callback: ComponentChangeCallback) {
+    this.onAddedCallbacks = [...this.onAddedCallbacks, callback];
+  }
+
+  onComponentRemoved(callback: ComponentChangeCallback) {
+    this.onRemovedCallbacks = [...this.onRemovedCallbacks, callback];
   }
 }

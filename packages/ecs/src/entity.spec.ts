@@ -1,4 +1,4 @@
-import { Component, defineComponent, defineFlag } from "./component";
+import { defineComponent, defineFlag } from "./component";
 import { Entity, SkipRuntimeTypeChecks } from "./entity";
 
 interface Vector2D {
@@ -51,6 +51,7 @@ describe("Entity", () => {
     expect(() =>
       entity.set(position, JSON.parse(incorrectDataInJson))
     ).not.toThrow();
+
     expect(() =>
       entity.set(strictPosition, JSON.parse(incorrectDataInJson))
     ).toThrow(
@@ -69,7 +70,52 @@ describe("Entity", () => {
 
   it("should allow to set a flag without passing any data", () => {
     entity.setFlag(dirty);
+
     expect(entity.has(dirty)).toBe(true);
     expect(() => entity.get(dirty)).not.toThrow();
+  });
+
+  it("should inform that a component has been added", () => {
+    const spiesOnAddingComponent = [jest.fn(), jest.fn()];
+    spiesOnAddingComponent.forEach((spy) => entity.onComponentAdded(spy));
+
+    entity.set(position, { x: 1, y: 2 });
+
+    spiesOnAddingComponent.forEach((spy) => {
+      expect(spy).toHaveBeenCalledWith(entity, position);
+    });
+  });
+
+  it("should not inform that a component has been added if it was already present", () => {
+    const spyOnAddingComponent = jest.fn();
+    entity.onComponentAdded(spyOnAddingComponent);
+
+    entity.set(position, { x: 1, y: 2 });
+    entity.set(position, { x: 2, y: 2 });
+
+    expect(spyOnAddingComponent).toHaveBeenCalledTimes(1);
+  });
+
+  it("should inform that a component has been removed", () => {
+    const spiesOnRemovingComponent = [jest.fn(), jest.fn()];
+    spiesOnRemovingComponent.forEach((spy) => {
+      entity.onComponentRemoved(spy);
+    });
+    entity.set(position, { x: 1, y: 2 });
+
+    entity.remove(position);
+
+    spiesOnRemovingComponent.forEach((spy) => {
+      expect(spy).toHaveBeenCalledWith(entity, position);
+    });
+  });
+
+  it("should not inform that a component has been removed if it was already absent", () => {
+    const spyOnRemovingComponent = jest.fn();
+    entity.onComponentRemoved(spyOnRemovingComponent);
+
+    entity.remove(position);
+
+    expect(spyOnRemovingComponent).not.toHaveBeenCalled();
   });
 });
