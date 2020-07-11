@@ -1,4 +1,4 @@
-import { Component, defineComponent } from "./component";
+import { Component, defineComponent, defineFlag } from './component';
 
 export interface Position {
   x: number;
@@ -18,5 +18,10 @@ describe("Component", () => {
   it("should allow to provide runtime type checking mechanims", () => {
     const position = defineComponent<Position>({typeGuard: isPosition});
     expect(position.typeGuard).toBe(isPosition);
+  });
+
+  it('should allow to create "flag" components with no data', () => {
+    const flag: Component<void> = defineFlag();
+    expect(flag).toBeDefined();
   });
 });

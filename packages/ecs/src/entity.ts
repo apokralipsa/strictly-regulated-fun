@@ -1,6 +1,6 @@
-import { Component } from "./component";
+import { Component, Flag } from "./component";
 
-export type RuntimeTypeCheck = (component: Component<any>, input: any, ) => void;
+export type RuntimeTypeCheck = (component: Component<any>, input: any) => void;
 export const SkipRuntimeTypeChecks: RuntimeTypeCheck = () => {};
 export const DoRuntimeTypeChecks: RuntimeTypeCheck = (component, input) => {
   if (component.typeGuard && !component.typeGuard(input)) {
@@ -19,6 +19,11 @@ export class Entity {
   set<T>(component: Component<T>, data: T): Entity {
     this.checkType(component, data);
     this.components.set(component, data);
+    return this;
+  }
+
+  setFlag(flag: Flag){
+    this.components.set(flag, null);
     return this;
   }
 

@@ -1,5 +1,5 @@
-import { defineComponent } from "./component";
-import { Entity, SkipRuntimeTypeChecks } from './entity';
+import { Component, defineComponent, defineFlag } from "./component";
+import { Entity, SkipRuntimeTypeChecks } from "./entity";
 
 interface Vector2D {
   x: number;
@@ -15,6 +15,7 @@ describe("Entity", () => {
   let velocity = defineComponent<Vector2D>();
   let unknownComponent = defineComponent<unknown>();
   let strictPosition = defineComponent<Vector2D>({ typeGuard });
+  let dirty = defineFlag();
   const incorrectDataInJson = JSON.stringify({ foo: "bar" });
 
   let entity: Entity;
@@ -47,13 +48,27 @@ describe("Entity", () => {
   });
 
   it("should run runtime checks for components that define them by default", () => {
-    expect(() => entity.set(position, JSON.parse(incorrectDataInJson))).not.toThrow();
-    expect(() => entity.set(strictPosition, JSON.parse(incorrectDataInJson))).toThrow(
+    expect(() =>
+      entity.set(position, JSON.parse(incorrectDataInJson))
+    ).not.toThrow();
+    expect(() =>
+      entity.set(strictPosition, JSON.parse(incorrectDataInJson))
+    ).toThrow(
       `Could not set component because the data did not pass runtime type check: ${incorrectDataInJson}`
     );
   });
 
-  it('should allow to skip runtime checks', () => {
-    expect(() => new Entity(SkipRuntimeTypeChecks).set(position, JSON.parse(incorrectDataInJson))).not.toThrow();
+  it("should allow to skip runtime checks", () => {
+    expect(() =>
+      new Entity(SkipRuntimeTypeChecks).set(
+        position,
+        JSON.parse(incorrectDataInJson)
+      )
+    ).not.toThrow();
+  });
+
+  it("should allow to set a flag without passing any data", () => {
+    entity.setFlag(dirty);
+    expect(entity.has(dirty)).toBe(true);
   });
 });
