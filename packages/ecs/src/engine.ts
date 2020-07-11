@@ -1,5 +1,6 @@
 import { DoRuntimeTypeChecks, Entity, RuntimeTypeCheck } from "./entity";
 import { System } from "./system";
+import { Component } from "./component";
 
 export interface Engine {
   createEntity(): Entity;
@@ -16,7 +17,7 @@ const defaultEngineConfig: EngineConfig = {
 };
 
 export function createEngine(config: Partial<EngineConfig> = {}): Engine {
-  return new NaiveEngine({ ...config, ...defaultEngineConfig });
+  return new NaiveEngine({ ...defaultEngineConfig, ...config });
 }
 
 class NaiveEngine implements Engine {
@@ -38,10 +39,30 @@ class NaiveEngine implements Engine {
     this.lastTickTime = newTickTime;
 
     this.systems.forEach((system) => {
-      const component = system.query;
+      const query = system.query;
+      const queryParts = Object.entries<Component<any>>(query).filter(
+        ([field, _]) => field !== "typeGuard"
+      );
+
+      const queryMatchedBy: (entity: Entity) => boolean =
+        queryParts.length === 0
+          ? (entity) => entity.has(query)
+          : (entity) => queryParts.every((part) => entity.has(part[1]));
+
+      const queriedDataOf: (entity: Entity) => any =
+        queryParts.length === 0
+          ? (entity) => entity.get(query)
+          : (entity) =>
+              Object.assign(
+                {},
+                ...queryParts.map(([componentName, component]) => ({
+                  [componentName]: entity.get(component),
+                }))
+              );
+
       this.entities.forEach((entity) => {
-        if (entity.has(component)) {
-          system.run(entity, entity.get(component), deltaTime);
+        if (queryMatchedBy(entity)) {
+          system.run(entity, queriedDataOf(entity), deltaTime);
         }
       });
     });

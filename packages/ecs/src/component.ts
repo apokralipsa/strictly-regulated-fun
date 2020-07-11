@@ -16,6 +16,6 @@ export function defineComponent<T>(
   return { typeGuard: options?.typeGuard };
 }
 
-export function defineFlag(): Flag{
+export function defineFlag(): Flag {
   return {};
 }
