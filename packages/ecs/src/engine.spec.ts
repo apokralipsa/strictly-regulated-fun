@@ -62,7 +62,10 @@ describe("A system that acts on a component", () => {
   let receivedData: Readonly<Position>[];
   let receivedDeltaTime: number;
 
-  position = defineComponent<Position>({ id: "position", typeGuard: isPosition });
+  position = defineComponent<Position>({
+    id: "position",
+    typeGuard: isPosition,
+  });
 
   engine = createEngine();
 
@@ -150,8 +153,8 @@ describe("A system that acts on a component", () => {
 });
 
 describe("A system that acts on a combination of components", () => {
-  const hp = defineComponent<number>({id: 'hp'});
-  const fireDamage = defineComponent<number>({id: 'fireDamage'});
+  const hp = defineComponent<number>({ id: "hp" });
+  const fireDamage = defineComponent<number>({ id: "fireDamage" });
   const engine = createEngine();
 
   let receivedEntities: Entity[] = [];
@@ -188,7 +191,7 @@ describe("A system that acts on a combination of components", () => {
 
 describe("A system written as a class", () => {
   it("should not require en explicit name", () => {
-    const hp = defineComponent<number>({id: "hp"});
+    const hp = defineComponent<number>({ id: "hp" });
 
     class MySystem extends StatefulSystem<typeof hp> {
       query = hp;
@@ -203,21 +206,24 @@ describe("A system written as a class", () => {
   });
 });
 
-interface Vector2D {
-  x: number;
-  y: number;
-}
-
-function typeGuard(input: any): input is Vector2D {
-  return input && typeof input.x === "number" && typeof input.y === "number";
-}
-
 describe("Entity", () => {
-  let position = defineComponent<Vector2D>({id: "position"});
-  let velocity = defineComponent<Vector2D>({id: "velocity"});
-  let unknownComponent = defineComponent<unknown>({id: "unknown"});
-  let strictPosition = defineComponent<Vector2D>({id: "strict position", typeGuard });
-  let dirty = defineFlag({id: "dirty"});
+  interface Vector2D {
+    x: number;
+    y: number;
+  }
+
+  function typeGuard(input: any): input is Vector2D {
+    return input && typeof input.x === "number" && typeof input.y === "number";
+  }
+
+  let position = defineComponent<Vector2D>({ id: "position" });
+  let velocity = defineComponent<Vector2D>({ id: "velocity" });
+  let unknownComponent = defineComponent<unknown>({ id: "unknown" });
+  let strictPosition = defineComponent<Vector2D>({
+    id: "strict position",
+    typeGuard,
+  });
+  let dirty = defineFlag({ id: "dirty" });
   const incorrectDataInJson = JSON.stringify({ foo: "bar" });
 
   let entity: Entity;
@@ -266,5 +272,49 @@ describe("Entity", () => {
 
     expect(entity.has(dirty)).toBe(true);
     expect(() => entity.get(dirty)).not.toThrow();
+  });
+});
+
+describe("An engine with multiple systems", () => {
+  const history = defineComponent<string[]>({ id: "history" });
+  const foo = defineFlag({ id: "foo" });
+  const bar = defineFlag({ id: "bar" });
+  const engine = createEngine();
+  const entity = engine
+    .createEntity()
+    .setFlag(foo)
+    .setFlag(bar)
+    .set(history, []);
+
+  engine.defineSystem({
+    name: "first",
+    query: { history, foo },
+    run: (matchedEntity, data) => {
+      matchedEntity.set(history, [...data.history, "first"]);
+    },
+  });
+
+  engine.defineSystem({
+    name: "second",
+    query: { history, bar },
+    run: (matchedEntity, data) => {
+      matchedEntity.set(history, [...data.history, "second"]);
+    },
+  });
+
+  engine.defineSystem({
+    name: "third",
+    query: history,
+    run: (matchedEntity, previousHistory) => {
+      matchedEntity.set(history, [...previousHistory, "third"]);
+    },
+  });
+
+  beforeEach(() => {
+    engine.tick();
+  });
+
+  it("should run the system in the order they were defined", () => {
+    expect(entity.get(history)).toEqual(["first", "second", "third"]);
   });
 });

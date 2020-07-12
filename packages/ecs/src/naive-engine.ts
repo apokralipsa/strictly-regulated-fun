@@ -1,15 +1,22 @@
-import { Query, System } from './system';
-import { Component, Flag } from './component';
-import { Engine, EngineConfig } from './engine';
-import { DoRuntimeTypeChecks, Entity, RuntimeTypeCheck } from './entity';
+import { Query, System } from "./system";
+import { Component, defineComponent, Flag } from "./component";
+import { Engine, EngineConfig } from "./engine";
+import { DoRuntimeTypeChecks, Entity, RuntimeTypeCheck } from "./entity";
+
+function anyTypeGuard(input: any): input is unknown {
+  return true;
+}
+const componentDefinitionExample = defineComponent<unknown>({
+  id: "internal.componentDefinitionExample",
+  typeGuard: anyTypeGuard,
+});
 
 export class NaiveEngine implements Engine {
   private systems: System<any>[] = [];
   private entities: Set<NaiveEntity> = new Set();
   private lastTickTime = this.tickTime();
 
-  constructor(private config: EngineConfig) {
-  }
+  constructor(private config: EngineConfig) {}
 
   createEntity(): NaiveEntity {
     const entity = new NaiveEntity(this.config.typeChecks);
@@ -27,13 +34,13 @@ export class NaiveEngine implements Engine {
     this.lastTickTime = newTickTime;
 
     this.systems.forEach((system) => {
-      if(system.tick) {
+      if (system.tick) {
         system.tick(deltaTime);
       }
 
       const query = system.query;
       const queryParts = Object.entries<Component<any>>(query).filter(
-        ([field, _]) => field !== 'typeGuard'
+        ([field, _]) => !componentDefinitionExample.hasOwnProperty(field)
       );
 
       const queryMatchedBy: (entity: NaiveEntity) => boolean =
@@ -45,12 +52,12 @@ export class NaiveEngine implements Engine {
         queryParts.length === 0
           ? (entity) => entity.get(query)
           : (entity) =>
-            Object.assign(
-              {},
-              ...queryParts.map(([componentName, component]) => ({
-                [componentName]: entity.get(component)
-              }))
-            );
+              Object.assign(
+                {},
+                ...queryParts.map(([componentName, component]) => ({
+                  [componentName]: entity.get(component),
+                }))
+              );
 
       this.entities.forEach((entity) => {
         if (queryMatchedBy(entity)) {
@@ -63,7 +70,7 @@ export class NaiveEngine implements Engine {
   defineSystem<Q extends Query<any>>(system: System<Q>): Engine {
     if (!system?.query) {
       throw new Error(
-        'Could not define the system because its query is undefined. Are the components you are trying to use defined before the system?'
+        "Could not define the system because its query is undefined. Are the components you are trying to use defined before the system?"
       );
     }
 
@@ -79,8 +86,7 @@ export class NaiveEngine implements Engine {
 class NaiveEntity implements Entity {
   private readonly components: Map<Component<any>, any> = new Map();
 
-  constructor(private checkType: RuntimeTypeCheck = DoRuntimeTypeChecks) {
-  }
+  constructor(private checkType: RuntimeTypeCheck = DoRuntimeTypeChecks) {}
 
   set<T>(component: Component<T>, data: T): Entity {
     this.checkType(component, data);
