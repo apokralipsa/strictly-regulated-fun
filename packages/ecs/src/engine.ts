@@ -1,10 +1,10 @@
 import { DoRuntimeTypeChecks, Entity, RuntimeTypeCheck } from './entity';
-import { System } from './system';
+import { Query, System } from './system';
 import { NaiveEngine } from './naive-engine';
 
 export interface Engine {
   createEntity(): Entity;
-  defineSystem<T>(system: System<T>): Engine;
+  defineSystem<Q extends Query<any>>(system: System<Q>): Engine;
   tick(): void;
   remove(entity: Entity): void;
 }

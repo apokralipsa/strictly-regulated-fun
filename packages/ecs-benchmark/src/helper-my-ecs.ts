@@ -8,10 +8,10 @@ interface Vector2D {
   y: number;
 }
 
-const position = defineComponent<Vector2D>();
-const velocity = defineComponent<Vector2D>();
-const render = defineFlag();
-const history = defineComponent<string>();
+const position = defineComponent<Vector2D>({id: "position"});
+const velocity = defineComponent<Vector2D>({id: "velocity"});
+const render = defineFlag({id: "render"});
+const history = defineComponent<string>({id: "history"});
 
 let updates = { num: 0 };
 

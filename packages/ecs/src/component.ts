@@ -1,21 +1,27 @@
 type TypeGuard<T> = (input: any) => input is T;
 
 export interface Component<T> {
+  id: string;
   typeGuard?: TypeGuard<T>;
 }
 
 export type Flag = Component<void>;
 
-export interface ComponentDefinitionOptions<T> {
+interface ComponentDefinitionOptions<T> {
+  id: string;
   typeGuard?: TypeGuard<T>;
 }
 
 export function defineComponent<T>(
-  options: ComponentDefinitionOptions<T> = {}
+  options: ComponentDefinitionOptions<T>
 ): Component<T> {
-  return { typeGuard: options?.typeGuard };
+  return { ...options };
 }
 
-export function defineFlag(): Flag {
-  return {};
+interface FlagDefinitionOptions {
+  id: string;
+}
+
+export function defineFlag(options: FlagDefinitionOptions): Flag {
+  return { ...options };
 }

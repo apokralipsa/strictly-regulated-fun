@@ -1,4 +1,4 @@
-import { System } from './system';
+import { Query, System } from './system';
 import { Component, Flag } from './component';
 import { Engine, EngineConfig } from './engine';
 import { DoRuntimeTypeChecks, Entity, RuntimeTypeCheck } from './entity';
@@ -60,7 +60,7 @@ export class NaiveEngine implements Engine {
     });
   }
 
-  defineSystem<T>(system: System<T>): Engine {
+  defineSystem<Q extends Query<any>>(system: System<Q>): Engine {
     if (!system?.query) {
       throw new Error(
         'Could not define the system because its query is undefined. Are the components you are trying to use defined before the system?'

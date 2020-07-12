@@ -11,17 +11,17 @@ export function isPosition(input: any): input is Position {
 
 describe("Component", () => {
   it("should be defined and specify the type of data it holds", () => {
-    const position: Component<Position> = defineComponent<Position>();
+    const position: Component<Position> = defineComponent<Position>({id: "position"});
     expect(position).toBeDefined();
   });
 
   it("should allow to provide runtime type checking mechanims", () => {
-    const position = defineComponent<Position>({typeGuard: isPosition});
+    const position = defineComponent<Position>({id: "strict position", typeGuard: isPosition});
     expect(position.typeGuard).toBe(isPosition);
   });
 
   it('should allow to create "flag" components with no data', () => {
-    const flag: Component<void> = defineFlag();
+    const flag: Component<void> = defineFlag({id: "my flag"});
     expect(flag).toBeDefined();
   });
 });

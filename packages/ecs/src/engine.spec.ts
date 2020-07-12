@@ -11,7 +11,7 @@ describe("Engine", () => {
 
   beforeEach(() => {
     engine = createEngine();
-    position = defineComponent({ typeGuard: isPosition });
+    position = defineComponent({ id: "position", typeGuard: isPosition });
   });
 
   it("should be created", () => {
@@ -62,7 +62,7 @@ describe("A system that acts on a component", () => {
   let receivedData: Readonly<Position>[];
   let receivedDeltaTime: number;
 
-  position = defineComponent<Position>({ typeGuard: isPosition });
+  position = defineComponent<Position>({ id: "position", typeGuard: isPosition });
 
   engine = createEngine();
 
@@ -150,8 +150,8 @@ describe("A system that acts on a component", () => {
 });
 
 describe("A system that acts on a combination of components", () => {
-  const hp = defineComponent<number>();
-  const fireDamage = defineComponent<number>();
+  const hp = defineComponent<number>({id: 'hp'});
+  const fireDamage = defineComponent<number>({id: 'fireDamage'});
   const engine = createEngine();
 
   let receivedEntities: Entity[] = [];
@@ -188,7 +188,7 @@ describe("A system that acts on a combination of components", () => {
 
 describe("A system written as a class", () => {
   it("should not require en explicit name", () => {
-    const hp = defineComponent<number>();
+    const hp = defineComponent<number>({id: "hp"});
 
     class MySystem extends StatefulSystem<typeof hp> {
       query = hp;
@@ -213,11 +213,11 @@ function typeGuard(input: any): input is Vector2D {
 }
 
 describe("Entity", () => {
-  let position = defineComponent<Vector2D>();
-  let velocity = defineComponent<Vector2D>();
-  let unknownComponent = defineComponent<unknown>();
-  let strictPosition = defineComponent<Vector2D>({ typeGuard });
-  let dirty = defineFlag();
+  let position = defineComponent<Vector2D>({id: "position"});
+  let velocity = defineComponent<Vector2D>({id: "velocity"});
+  let unknownComponent = defineComponent<unknown>({id: "unknown"});
+  let strictPosition = defineComponent<Vector2D>({id: "strict position", typeGuard });
+  let dirty = defineFlag({id: "dirty"});
   const incorrectDataInJson = JSON.stringify({ foo: "bar" });
 
   let entity: Entity;
