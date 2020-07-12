@@ -1,6 +1,6 @@
-import { DoRuntimeTypeChecks, Entity, RuntimeTypeCheck } from "./entity";
-import { System } from "./system";
-import { Component } from "./component";
+import { DoRuntimeTypeChecks, Entity, RuntimeTypeCheck } from './entity';
+import { Component } from './component';
+import { System } from './system';
 
 export interface Engine {
   createEntity(): Entity;

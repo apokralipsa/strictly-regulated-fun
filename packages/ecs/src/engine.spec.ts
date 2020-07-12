@@ -3,7 +3,7 @@ import { Entity, SkipRuntimeTypeChecks } from "./entity";
 import { Component, defineComponent } from "./component";
 import { isPosition, Position } from "./component.spec";
 import * as FakeTimers from "@sinonjs/fake-timers";
-import { System } from "./system";
+import { StatefulSystem, System } from "./system";
 
 describe("Engine", () => {
   let engine: Engine = createEngine();
@@ -24,6 +24,7 @@ describe("Engine", () => {
 
   it("should not allow to define a system with undefined query", () => {
     const incorrectSystem = ({
+      name: "incorrect system",
       query: undefined,
       run: () => {},
     } as unknown) as System<any>;
@@ -66,6 +67,7 @@ describe("A system that acts on a component", () => {
   engine = createEngine();
 
   engine.defineSystem({
+    name: "position system",
     query: position,
     run: (anEntity, data, deltaTime) => {
       receivedEntities = [...receivedEntities, anEntity];
@@ -130,12 +132,12 @@ describe("A system that acts on a component", () => {
     });
   });
 
-  describe('when the component is removed from that entity', () => {
+  describe("when the component is removed from that entity", () => {
     let previouslyReceivedEntities: Entity[];
 
     beforeEach(() => {
       previouslyReceivedEntities = [...receivedEntities];
-      matchingEntity.remove(position)
+      matchingEntity.remove(position);
       engine.tick();
     });
 
@@ -161,6 +163,7 @@ describe("A system that acts on a combination of components", () => {
   const burningEntity = engine.createEntity().set(hp, 35).set(fireDamage, 40);
 
   engine.defineSystem({
+    name: "fire damage system",
     query: { hp, fireDamage },
     run: (entity, data) => {
       receivedEntities = [...receivedEntities, entity];
@@ -178,5 +181,22 @@ describe("A system that acts on a combination of components", () => {
 
   it("should receive the data", () => {
     expect(receivedData).toEqual([{ hp: 35, fireDamage: 40 }]);
+  });
+});
+
+describe("A system written as a class", () => {
+  it("should not require en explicit name", () => {
+    const hp = defineComponent<number>();
+
+    class MySystem extends StatefulSystem<typeof hp> {
+      query = hp;
+      run(): void {}
+
+      constructor() {
+        super();
+      }
+    }
+
+    createEngine().defineSystem(new MySystem());
   });
 });

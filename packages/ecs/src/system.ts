@@ -18,6 +18,20 @@ export type Result<Q extends Query<any>> = Q extends Component<infer T>
   : never;
 
 export interface System<Q extends Query<any>> {
+  readonly name: string;
   query: Q;
   run: (entity: Entity, data: Result<Q>, deltaTime: number) => void;
+}
+
+export abstract class StatefulSystem<Q extends Query<any>>
+  implements System<Q> {
+  readonly name;
+
+  protected constructor() {
+    this.name = this.constructor.name;
+  }
+
+  abstract query: Q;
+
+  abstract run(entity: Entity, data: Result<Q>, deltaTime: number): void;
 }
