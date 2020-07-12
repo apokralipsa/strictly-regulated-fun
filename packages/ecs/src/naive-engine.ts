@@ -27,6 +27,10 @@ export class NaiveEngine implements Engine {
     this.lastTickTime = newTickTime;
 
     this.systems.forEach((system) => {
+      if(system.tick) {
+        system.tick(deltaTime);
+      }
+
       const query = system.query;
       const queryParts = Object.entries<Component<any>>(query).filter(
         ([field, _]) => field !== 'typeGuard'
@@ -50,7 +54,7 @@ export class NaiveEngine implements Engine {
 
       this.entities.forEach((entity) => {
         if (queryMatchedBy(entity)) {
-          system.run(entity, queriedDataOf(entity), deltaTime);
+          system.run(entity, queriedDataOf(entity));
         }
       });
     });

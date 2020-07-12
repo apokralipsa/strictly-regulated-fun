@@ -20,7 +20,8 @@ export type Result<Q extends Query<any>> = Q extends Component<infer T>
 export interface System<Q extends Query<any>> {
   readonly name: string;
   query: Q;
-  run: (entity: Entity, data: Result<Q>, deltaTime: number) => void;
+  run: (entity: Entity, data: Result<Q>) => void;
+  tick?: (deltaTime: number) => void
 }
 
 export abstract class StatefulSystem<Q extends Query<any>>
@@ -33,5 +34,5 @@ export abstract class StatefulSystem<Q extends Query<any>>
 
   abstract query: Q;
 
-  abstract run(entity: Entity, data: Result<Q>, deltaTime: number): void;
+  abstract run(entity: Entity, data: Result<Q>): void;
 }

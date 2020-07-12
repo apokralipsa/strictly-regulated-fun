@@ -1,6 +1,6 @@
 import { createEngine, Engine } from "./engine";
-import { Entity, SkipRuntimeTypeChecks } from './entity';
-import { Component, defineComponent, defineFlag } from './component';
+import { Entity, SkipRuntimeTypeChecks } from "./entity";
+import { Component, defineComponent, defineFlag } from "./component";
 import { isPosition, Position } from "./component.spec";
 import * as FakeTimers from "@sinonjs/fake-timers";
 import { StatefulSystem, System } from "./system";
@@ -69,10 +69,12 @@ describe("A system that acts on a component", () => {
   engine.defineSystem({
     name: "position system",
     query: position,
-    run: (anEntity, data, deltaTime) => {
+    tick: (deltaTime) => {
+      receivedDeltaTime = deltaTime;
+    },
+    run: (anEntity, data) => {
       receivedEntities = [...receivedEntities, anEntity];
       receivedData = [...receivedData, data];
-      receivedDeltaTime = deltaTime;
     },
   });
 
