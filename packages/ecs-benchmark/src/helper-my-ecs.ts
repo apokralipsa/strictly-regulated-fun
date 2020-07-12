@@ -22,11 +22,13 @@ export const my_ecs = {
     engine = createEngine();
 
     engine.defineSystem({
+      name: "position system",
       query: position,
       run: () => {},
     });
 
     engine.defineSystem({
+      name: "velocity system",
       query: { position, velocity },
       run: (entity, data) => {
         entity.set(position, {
@@ -39,6 +41,7 @@ export const my_ecs = {
     });
 
     engine.defineSystem({
+      name: "render system",
       query: { position, velocity, render },
       run: () => {},
     });

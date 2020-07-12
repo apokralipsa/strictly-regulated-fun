@@ -1,5 +1,5 @@
 import { Component } from "./component";
-import { Entity } from "./entity";
+import { Entity } from './entity';
 
 export type CombinationOfComponents = {
   [name: string]: Component<any>;

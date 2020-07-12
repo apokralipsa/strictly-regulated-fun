@@ -1,6 +1,6 @@
 import { createEngine, Engine } from "./engine";
-import { Entity, SkipRuntimeTypeChecks } from "./entity";
-import { Component, defineComponent } from "./component";
+import { Entity, SkipRuntimeTypeChecks } from './entity';
+import { Component, defineComponent, defineFlag } from './component';
 import { isPosition, Position } from "./component.spec";
 import * as FakeTimers from "@sinonjs/fake-timers";
 import { StatefulSystem, System } from "./system";
@@ -198,5 +198,71 @@ describe("A system written as a class", () => {
     }
 
     createEngine().defineSystem(new MySystem());
+  });
+});
+
+interface Vector2D {
+  x: number;
+  y: number;
+}
+
+function typeGuard(input: any): input is Vector2D {
+  return input && typeof input.x === "number" && typeof input.y === "number";
+}
+
+describe("Entity", () => {
+  let position = defineComponent<Vector2D>();
+  let velocity = defineComponent<Vector2D>();
+  let unknownComponent = defineComponent<unknown>();
+  let strictPosition = defineComponent<Vector2D>({ typeGuard });
+  let dirty = defineFlag();
+  const incorrectDataInJson = JSON.stringify({ foo: "bar" });
+
+  let entity: Entity;
+
+  beforeEach(() => {
+    entity = createEngine().createEntity();
+  });
+
+  it("should inform what components it has", () => {
+    entity.set(position, { x: 1, y: 1 });
+
+    expect(entity.has(position)).toBe(true);
+    expect(entity.has(unknownComponent)).toBe(false);
+  });
+
+  it("should return the components it has", () => {
+    entity.set(position, { x: 1, y: 1 }).set(velocity, { x: 0, y: 0 });
+
+    const returnedPosition: Readonly<Vector2D> = entity.get(position);
+    const returnedVelocity: Readonly<Vector2D> = entity.get(velocity);
+
+    expect(returnedPosition).toEqual({ x: 1, y: 1 });
+    expect(returnedVelocity).toEqual({ x: 0, y: 0 });
+  });
+
+  it("should throw an error if a component is missing", () => {
+    expect(() => entity.get(unknownComponent)).toThrow(
+      "Entity does not contain the requested component"
+    );
+  });
+
+  it("should run runtime checks for components that define them by default", () => {
+    expect(() =>
+      entity.set(position, JSON.parse(incorrectDataInJson))
+    ).not.toThrow();
+
+    expect(() =>
+      entity.set(strictPosition, JSON.parse(incorrectDataInJson))
+    ).toThrow(
+      `Could not set component because the data did not pass runtime type check: ${incorrectDataInJson}`
+    );
+  });
+
+  it("should allow to set a flag without passing any data", () => {
+    entity.setFlag(dirty);
+
+    expect(entity.has(dirty)).toBe(true);
+    expect(() => entity.get(dirty)).not.toThrow();
   });
 });
