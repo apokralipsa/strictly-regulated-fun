@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "benchmark": "^2.1.4",
-    "ecs": "^0.0.0"
+    "ecs": "^0.0.0",
+    "makr": "^2.1.1"
   }
 }

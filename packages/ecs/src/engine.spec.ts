@@ -1,17 +1,37 @@
 import { createEngine, Engine } from "./engine";
 import { Entity, SkipRuntimeTypeChecks } from "./entity";
 import { Component, defineComponent, defineFlag } from "./component";
-import { isPosition, Position } from "./component.spec";
 import * as FakeTimers from "@sinonjs/fake-timers";
 import { StatefulSystem, System } from "./system";
 
+
+const hp = defineComponent<number>({ id: "hp" });
+const fireDamage = defineComponent<number>({ id: "fireDamage" });
+const poisonDamage = defineComponent<number>({ id: "poisonDamage" });
+
+interface Vector2D {
+  x: number;
+  y: number;
+}
+
+function typeGuard(input: any): input is Vector2D {
+  return input && typeof input.x === "number" && typeof input.y === "number";
+}
+
+let position = defineComponent<Vector2D>({ id: "position" });
+let velocity = defineComponent<Vector2D>({ id: "velocity" });
+let unknownComponent = defineComponent<unknown>({ id: "unknown" });
+let strictPosition = defineComponent<Vector2D>({
+  id: "strict position",
+  typeGuard,
+});
+let dirty = defineFlag({ id: "dirty" });
+
 describe("Engine", () => {
   let engine: Engine = createEngine();
-  let position: Component<Position>;
 
   beforeEach(() => {
     engine = createEngine();
-    position = defineComponent({ id: "position", typeGuard: isPosition });
   });
 
   it("should be created", () => {
@@ -36,7 +56,7 @@ describe("Engine", () => {
 
   it("should run runtime type checks by default", () => {
     expect(() =>
-      engine.createEntity().set(position, ({ foo: "bar" } as any) as Position)
+      engine.createEntity().set(strictPosition, ({ foo: "bar" } as any) as Vector2D)
     ).toThrow();
   });
 
@@ -44,7 +64,7 @@ describe("Engine", () => {
     expect(() =>
       createEngine({ typeChecks: SkipRuntimeTypeChecks })
         .createEntity()
-        .set(position, ({ foo: "bar" } as any) as Position)
+        .set(strictPosition, ({ foo: "bar" } as any) as Vector2D)
     ).not.toThrow();
   });
 });
@@ -53,54 +73,48 @@ describe("A system that acts on a component", () => {
   let clock: FakeTimers.InstalledClock;
 
   let engine: Engine;
-  let position: Component<Position>;
 
   let matchingEntity: Entity;
   let differentEntity: Entity;
 
   let receivedEntities: Entity[];
-  let receivedData: Readonly<Position>[];
+  let receivedData: Readonly<number>[];
   let receivedDeltaTime: number;
-
-  position = defineComponent<Position>({
-    id: "position",
-    typeGuard: isPosition,
-  });
-
-  engine = createEngine();
-
-  engine.defineSystem({
-    name: "position system",
-    query: position,
-    tick: (deltaTime) => {
-      receivedDeltaTime = deltaTime;
-    },
-    run: (anEntity, data) => {
-      receivedEntities = [...receivedEntities, anEntity];
-      receivedData = [...receivedData, data];
-    },
-  });
 
   beforeAll(() => {
     clock = FakeTimers.install();
+  });
 
-    afterAll(() => {
-      clock.uninstall();
-    });
-
-    matchingEntity = engine.createEntity().set(position, { x: 1, y: 1 });
-    differentEntity = engine.createEntity();
+  afterAll(() => {
+    clock.uninstall();
   });
 
   beforeEach(() => {
     receivedEntities = [];
     receivedData = [];
+
+    engine = createEngine();
+    matchingEntity = engine.createEntity().set(hp, 42);
+    differentEntity = engine.createEntity();
+
+    engine.defineSystem({
+      name: "hp system",
+      query: hp,
+      tick: (deltaTime) => {
+        receivedDeltaTime = deltaTime;
+      },
+      run: (anEntity, data) => {
+        receivedEntities = [...receivedEntities, anEntity];
+        receivedData = [...receivedData, data];
+      },
+    });
+
     engine.tick();
   });
 
   it("should receive the correct entities and data", () => {
     expect(receivedEntities).toEqual([matchingEntity]);
-    expect(receivedData).toEqual([{ x: 1, y: 1 }]);
+    expect(receivedData).toEqual([42]);
   });
 
   it("should be informed that no passage of time has happened yet", () => {
@@ -142,7 +156,7 @@ describe("A system that acts on a component", () => {
 
     beforeEach(() => {
       previouslyReceivedEntities = [...receivedEntities];
-      matchingEntity.remove(position);
+      matchingEntity.remove(hp);
       engine.tick();
     });
 
@@ -150,33 +164,52 @@ describe("A system that acts on a component", () => {
       expect(receivedEntities).toEqual(previouslyReceivedEntities);
     });
   });
+
+  describe("when an additional component is added to the matching entity", () => {
+    beforeEach(() => {
+      matchingEntity.set(fireDamage, 5);
+    });
+
+    it("should not operate on duplicated entities", () => {
+      engine.tick();
+      expect(receivedEntities.length).toBe(2);
+    });
+  });
 });
 
 describe("A system that acts on a combination of components", () => {
-  const hp = defineComponent<number>({ id: "hp" });
-  const fireDamage = defineComponent<number>({ id: "fireDamage" });
-  const engine = createEngine();
+  let engine: Engine;
 
-  let receivedEntities: Entity[] = [];
+  let burningEntity: Entity;
+
+  let receivedEntities: Entity[];
   let receivedData: {
     hp: Readonly<number>;
     fireDamage: Readonly<number>;
-  }[] = [];
+  }[];
 
-  engine.createEntity();
-  engine.createEntity().set(hp, 35);
-  const burningEntity = engine.createEntity().set(hp, 35).set(fireDamage, 40);
+  beforeEach(() => {
+    engine = createEngine();
 
-  engine.defineSystem({
-    name: "fire damage system",
-    query: { hp, fireDamage },
-    run: (entity, data) => {
-      receivedEntities = [...receivedEntities, entity];
-      receivedData = [...receivedData, data];
-    },
-  });
+    engine.createEntity();
+    engine.createEntity().set(hp, 35);
+    burningEntity = engine
+      .createEntity()
+      .set(hp, 35)
+      .set(fireDamage, 40)
+      .set(poisonDamage, 5);
 
-  beforeAll(() => {
+    engine.defineSystem({
+      name: "fire damage system",
+      query: { hp, fireDamage },
+      run: (entity, data) => {
+        receivedEntities = [...receivedEntities, entity];
+        receivedData = [...receivedData, data];
+      },
+    });
+
+    receivedEntities = [];
+    receivedData = [];
     engine.tick();
   });
 
@@ -185,7 +218,42 @@ describe("A system that acts on a combination of components", () => {
   });
 
   it("should receive the data", () => {
-    expect(receivedData).toEqual([{ hp: 35, fireDamage: 40 }]);
+    expect(receivedData[0]).toMatchObject({ hp: 35, fireDamage: 40 });
+    expect(receivedData.length).toBe(1);
+  });
+
+  describe("when one of the required components is removed from entity", () => {
+    beforeEach(() => {
+      burningEntity.remove(fireDamage);
+    });
+
+    it("should no longer act on it", () => {
+      const previouslyReceivedEntities = [...receivedEntities];
+      engine.tick();
+      expect(receivedEntities).toEqual(previouslyReceivedEntities);
+    });
+  });
+
+  describe("when an unrelated component is removed", () => {
+    beforeEach(() => {
+      burningEntity.remove(poisonDamage);
+    });
+
+    it("should still act on it", () => {
+      engine.tick();
+      expect(receivedEntities.length).toBe(2);
+    });
+  });
+
+  describe("when an additional component is added to the matching entity", () => {
+    beforeEach(() => {
+      burningEntity.setFlag(dirty);
+    });
+
+    it("should not operate on duplicated entities", () => {
+      engine.tick();
+      expect(receivedEntities.length).toBe(2);
+    });
   });
 });
 
@@ -207,23 +275,6 @@ describe("A system written as a class", () => {
 });
 
 describe("Entity", () => {
-  interface Vector2D {
-    x: number;
-    y: number;
-  }
-
-  function typeGuard(input: any): input is Vector2D {
-    return input && typeof input.x === "number" && typeof input.y === "number";
-  }
-
-  let position = defineComponent<Vector2D>({ id: "position" });
-  let velocity = defineComponent<Vector2D>({ id: "velocity" });
-  let unknownComponent = defineComponent<unknown>({ id: "unknown" });
-  let strictPosition = defineComponent<Vector2D>({
-    id: "strict position",
-    typeGuard,
-  });
-  let dirty = defineFlag({ id: "dirty" });
   const incorrectDataInJson = JSON.stringify({ foo: "bar" });
 
   let entity: Entity;
@@ -233,10 +284,10 @@ describe("Entity", () => {
   });
 
   it("should inform what components it has", () => {
-    entity.set(position, { x: 1, y: 1 });
+    entity.set(hp, 42);
 
-    expect(entity.has(position)).toBe(true);
-    expect(entity.has(unknownComponent)).toBe(false);
+    expect(entity.has(hp)).toBe(true);
+    expect(entity.has(fireDamage)).toBe(false);
   });
 
   it("should return the components it has", () => {

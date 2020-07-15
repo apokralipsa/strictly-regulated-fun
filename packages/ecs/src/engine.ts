@@ -1,6 +1,7 @@
 import { DoRuntimeTypeChecks, Entity, RuntimeTypeCheck } from './entity';
 import { Query, System } from './system';
 import { NaiveEngine } from './naive-engine';
+import { ViewBasedEngine } from './view-based-engine';
 
 export interface Engine {
   createEntity(): Entity;
@@ -18,6 +19,6 @@ const defaultEngineConfig: EngineConfig = {
 };
 
 export function createEngine(config: Partial<EngineConfig> = {}): Engine {
-  return new NaiveEngine({ ...defaultEngineConfig, ...config });
+  return new ViewBasedEngine({...defaultEngineConfig, ...config});
 }
 

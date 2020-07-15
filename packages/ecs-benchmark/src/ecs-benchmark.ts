@@ -1,4 +1,5 @@
 import { my_ecs } from "./helper-my-ecs";
+import { makr_test } from './helper-makr';
 
 const { performance } = require("perf_hooks");
 
@@ -126,12 +127,16 @@ function runTest(test: { fn: () => number; name: string; updates: any }) {
 
 console.log("Create and update");
 runTest(createAddUpdateTest(my_ecs));
+runTest(createAddUpdateTest(makr_test));
 
 console.log("\nCreate, update and destroy");
 runTest(createAddUpdateDestroyTest(my_ecs));
+runTest(createAddUpdateDestroyTest(makr_test));
 
 console.log("\nCreate, update, destroy and remove components");
 runTest(createAddUpdateDestroyRemoveTest(my_ecs));
+runTest(createAddUpdateDestroyRemoveTest(makr_test));
 
 console.log("\nCreate, update, destroy and add components");
 runTest(createAddUpdateDestroyCreateTest(my_ecs));
+runTest(createAddUpdateDestroyCreateTest(makr_test));
