@@ -1,23 +1,11 @@
 import { Engine, EngineConfig } from './engine';
 import { Entity } from './entity';
-import { CombinationOfComponents, Query, System } from './system';
-import { Component, Flag, isComponent } from './component';
-
-interface View {
-  handles(query: Query<any>): boolean;
-  forEach(act: (entity: Entity, data: any) => void): void;
-  test(entity: IndexedEntity): void;
-  retest(entity: IndexedEntity): void;
-  remove(entity: IndexedEntity): void;
-}
+import { Query, Result, System } from './system';
+import { Component, Flag } from './component';
 
 interface SystemWithView {
   system: System<any>;
   view: View;
-}
-
-interface IndexedData {
-  [componentId: string]: any;
 }
 
 const flagMarker = {};
@@ -31,8 +19,8 @@ function typeCheck(component: Component<unknown>, input: unknown) {
   }
 };
 
-class IndexedEntity implements Entity {
-  data: IndexedData = {};
+class ViewsAwareEntity implements Entity {
+  data: Result<Query> = {};
   containingViews = new Set<View>();
 
   constructor(
@@ -83,30 +71,30 @@ class IndexedEntity implements Entity {
 
 class Views {
   private views: View[] = [];
-  private entities: IndexedEntity[] = [];
+  private entities= new Set<ViewsAwareEntity>();
 
-  viewToMatch(query: Query<any>): View {
+  viewToMatch(query: Query): View {
     return this.existingViewToHandle(query) || this.newViewToHandle(query);
   }
 
-  add(entity: IndexedEntity) {
-    this.entities.push(entity);
+  add(entity: ViewsAwareEntity) {
+    this.entities.add(entity);
   }
 
-  remove(entity: IndexedEntity) {
-    this.entities.splice(this.entities.indexOf(entity), 1);
+  remove(entity: ViewsAwareEntity) {
+    this.entities.delete(entity);
 
     for (const view of entity.containingViews) {
       view.remove(entity);
     }
   }
 
-  private existingViewToHandle(query: Query<any>): View | undefined {
+  private existingViewToHandle(query: Query): View | undefined {
     return this.views.find((view) => view.handles(query));
   }
 
-  private newViewToHandle(query: Query<any>): View {
-    const newView = this.constructViewFor(query);
+  private newViewToHandle(query: Query): View {
+    const newView = new View(query);
 
     for (const entity of this.entities) {
       newView.test(entity);
@@ -116,71 +104,22 @@ class Views {
     return newView;
   }
 
-  private constructViewFor(query: Query<any>): View {
-    if (isComponent(query)) {
-      return new SingleComponentView(query);
-    } else if (this.noMappingIsRequiredFor(query)) {
-      return new SimpleMultiComponentView(query);
-    } else {
-      return new MappingMultiComponentView(query);
-    }
-  }
-
-  private noMappingIsRequiredFor(query: CombinationOfComponents) {
-    return Object.entries(query).every(
-      ([requestedName, component]) => requestedName === component.componentId
-    );
-  }
-
-  componentAddedTo(entity: IndexedEntity) {
+  componentAddedTo(entity: ViewsAwareEntity) {
     for (const view of this.views) {
       view.test(entity);
     }
   }
 }
 
-class SingleComponentView implements View {
-  private matchedEntities= new Set<IndexedEntity>();
-  constructor(private component: Component<any>) {}
-
-  handles(query: Query<any>): boolean {
-    return this.component === query;
-  }
-
-  forEach(act: (entity: Entity, data: any) => void): void {
-    for (const entity of this.matchedEntities) {
-      act(entity, entity.data[this.component.componentId]);
-    }
-  }
-
-  test(entity: IndexedEntity): void {
-    if (entity.has(this.component)) {
-      this.matchedEntities.add(entity);
-      entity.containingViews.add(this);
-    }
-  }
-
-  retest(entity: IndexedEntity): void {
-    if (!entity.has(this.component)) {
-      this.remove(entity);
-      entity.containingViews.delete(this);
-    }
-  }
-
-  remove(entity: IndexedEntity): void {
-    this.matchedEntities.delete(entity);
-  }
-}
-
-class SimpleMultiComponentView implements View {
-  private readonly matchedEntities = new Set<IndexedEntity>();
+class View {
+  private readonly matchedEntities = new Set<ViewsAwareEntity>();
   private readonly componentNames: string[];
 
-  constructor(private query: CombinationOfComponents) {
+  constructor(private query: Query) {
     this.componentNames = this.componentNamesIn(query);
   }
 
-  handles(query: Query<any>): boolean {
+  handles(query: Query): boolean {
     const componentNamesInQuery = this.componentNamesIn(query);
     return (
       this.componentNames.length === componentNamesInQuery.length &&
@@ -194,99 +133,32 @@ class SimpleMultiComponentView implements View {
     }
   }
 
-  test(entity: IndexedEntity): void {
+  test(entity: ViewsAwareEntity): void {
     if (this.queryIsMatchedBy(entity)) {
       this.matchedEntities.add(entity);
       entity.containingViews.add(this);
     }
   }
 
-  retest(entity: IndexedEntity): void {
+  retest(entity: ViewsAwareEntity): void {
     if (!this.queryIsMatchedBy(entity)) {
       this.remove(entity);
       entity.containingViews.delete(this);
     }
   }
 
-  remove(entity: IndexedEntity): void {
+  remove(entity: ViewsAwareEntity): void {
     this.matchedEntities.delete(entity);
   }
 
-  private queryIsMatchedBy(entity: IndexedEntity) {
+  private queryIsMatchedBy(entity: ViewsAwareEntity) {
     return this.componentNames.every((componentName) =>
       entity.data.hasOwnProperty(componentName)
     );
   }
 
-  private componentNamesIn(query: Query<any>) {
+  private componentNamesIn(query: Query) {
     return Object.keys(query);
-  }
-}
-
-type ComponentMapping = [string, string][];
-
-class MappingMultiComponentView implements View {
-  private readonly mapping: ComponentMapping;
-  private readonly mappedData = new Map<IndexedEntity, any>();
-
-  constructor(query: CombinationOfComponents) {
-    this.mapping = this.mappingRequiredBy(query);
-    console.warn(
-      `Constructing a mapping view as the ids in a query do not match the field names. Required mapping: ${JSON.stringify(
-        this.mapping
-      )}. THIS WILL CAUSE A PERFORMANCE DEGRADATION. `
-    );
-  }
-
-  handles(query: Query<any>): boolean {
-    const requiredMapping = this.mappingRequiredBy(query);
-    return (
-      this.mapping.length === requiredMapping.length &&
-      JSON.stringify(this.mapping) === JSON.stringify(requiredMapping)
-    );
-  }
-
-  forEach(act: (entity: Entity, data: any) => void): void {
-    Array.from(this.mappedData.entries()).forEach(([entity, data]) => {
-      act(entity, data);
-    });
-  }
-
-  test(entity: IndexedEntity): void {
-    if (this.queryIsMatchedBy(entity)) {
-      this.mappedData.set(entity, this.map(entity.data));
-      entity.containingViews.add(this);
-    }
-  }
-
-  retest(entity: IndexedEntity): void {
-    if (!this.queryIsMatchedBy(entity)) {
-      this.mappedData.delete(entity);
-      entity.containingViews.delete(this);
-    }
-  }
-
-  remove(entity: IndexedEntity): void {
-    this.mappedData.delete(entity);
-  }
-
-  private mappingRequiredBy(query: Query<any>): [string, string][] {
-    return Object.keys(query).map((key) => [
-      key,
-      query[key].componentId as string,
-    ]);
-  }
-  private queryIsMatchedBy(entity: IndexedEntity) {
-    return this.mapping.every(([_, componentId]) =>
-      entity.data.hasOwnProperty(componentId)
-    );
-  }
-
-  private map(data: IndexedData) {
-    return Object.assign(
-      {},
-      ...this.mapping.map(([newKey, id]) => [newKey, data[id]])
-    );
   }
 }
 
@@ -297,12 +169,12 @@ export class ViewBasedEngine implements Engine {
   constructor(private config: EngineConfig) {}
 
   createEntity(): Entity {
-    let newEntity = new IndexedEntity(this, this.config.typeChecks);
+    let newEntity = new ViewsAwareEntity(this, this.config.typeChecks);
     this.views.add(newEntity);
     return newEntity;
   }
 
-  defineSystem<Q extends Query<any>>(system: System<Q>): Engine {
+  defineSystem<Q extends Query>(system: System<Q>): Engine {
     if (!system.query) {
       throw new Error(
         "Could not define the system because its query is undefined. Are the components you are trying to use defined before the system?"
@@ -315,7 +187,7 @@ export class ViewBasedEngine implements Engine {
   }
 
   remove(entity: Entity): void {
-    this.views.remove(entity as IndexedEntity);
+    this.views.remove(entity as ViewsAwareEntity);
   }
 
   tick(): void {
@@ -332,7 +204,7 @@ export class ViewBasedEngine implements Engine {
     }
   }
 
-  componentAdded(entity: IndexedEntity) {
+  componentAdded(entity: ViewsAwareEntity) {
     this.views.componentAddedTo(entity);
   }
 }

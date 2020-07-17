@@ -1,30 +1,22 @@
 import { Component } from "./component";
-import { Entity } from './entity';
+import { Entity } from "./entity";
 
-export type CombinationOfComponents = {
+export type Query = {
   [name: string]: Component<any>;
 };
 
-export type CombinedData<C extends CombinationOfComponents> = {
+export type Result<C extends Query> = {
   [key in keyof C]: C[key] extends Component<infer T> ? Readonly<T> : never;
 };
 
-export type Query<R> = Component<R> | CombinationOfComponents;
-
-export type Result<Q extends Query<any>> = Q extends Component<infer T>
-  ? Readonly<T>
-  : Q extends CombinationOfComponents
-  ? CombinedData<Q>
-  : never;
-
-export interface System<Q extends Query<any>> {
+export interface System<Q extends Query> {
   readonly name: string;
   query: Q;
   run: (entity: Entity, data: Result<Q>) => void;
-  tick?: (deltaTime: number) => void
+  tick?: (deltaTime: number) => void;
 }
 
-export abstract class StatefulSystem<Q extends Query<any>>
+export abstract class StatefulSystem<Q extends Query>
   implements System<Q> {
   readonly name;
 

@@ -1,5 +1,5 @@
 import { createEngine, Engine } from './engine';
-import { Entity, SkipRuntimeTypeChecks } from './entity';
+import { Entity } from './entity';
 import { defineComponent, defineFlag } from './component';
 import * as FakeTimers from '@sinonjs/fake-timers';
 import { StatefulSystem, System } from './system';
@@ -55,13 +55,15 @@ describe("Engine", () => {
 
   it("should run runtime type checks by default", () => {
     expect(() =>
-      engine.createEntity().set(strictPosition, ({ foo: "bar" } as any) as Vector2D)
+      engine
+        .createEntity()
+        .set(strictPosition, ({ foo: "bar" } as any) as Vector2D)
     ).toThrow();
   });
 
   it("should give an option to disable runtime type checks", () => {
     expect(() =>
-      createEngine({ typeChecks: SkipRuntimeTypeChecks })
+      createEngine({ typeChecks: false })
         .createEntity()
         .set(strictPosition, ({ foo: "bar" } as any) as Vector2D)
     ).not.toThrow();
@@ -77,7 +79,7 @@ describe("A system that acts on a component", () => {
   let differentEntity: Entity;
 
   let receivedEntities: Entity[];
-  let receivedData: Readonly<number>[];
+  let receivedData: number[];
   let receivedDeltaTime: number;
 
   beforeAll(() => {
@@ -98,13 +100,13 @@ describe("A system that acts on a component", () => {
 
     engine.defineSystem({
       name: "hp system",
-      query: hp,
+      query: { hp },
       tick: (deltaTime) => {
         receivedDeltaTime = deltaTime;
       },
       run: (anEntity, data) => {
         receivedEntities = [...receivedEntities, anEntity];
-        receivedData = [...receivedData, data];
+        receivedData = [...receivedData, data.hp];
       },
     });
 
@@ -259,9 +261,10 @@ describe("A system that acts on a combination of components", () => {
 describe("A system written as a class", () => {
   it("should not require en explicit name", () => {
     const hp = defineComponent<number>({ id: "hp" });
+    const query = { hp };
 
-    class MySystem extends StatefulSystem<typeof hp> {
-      query = hp;
+    class MySystem extends StatefulSystem<typeof query> {
+      query = query;
       run(): void {}
 
       constructor() {
@@ -354,9 +357,9 @@ describe("An engine with multiple systems", () => {
 
   engine.defineSystem({
     name: "third",
-    query: history,
-    run: (matchedEntity, previousHistory) => {
-      matchedEntity.set(history, [...previousHistory, "third"]);
+    query: { history },
+    run: (matchedEntity, data) => {
+      matchedEntity.set(history, [...data.history, "third"]);
     },
   });
 

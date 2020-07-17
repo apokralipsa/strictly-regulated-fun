@@ -23,7 +23,7 @@ export const my_ecs = {
 
     engine.defineSystem({
       name: "position system",
-      query: position,
+      query: { position },
       run: () => {},
     });
 

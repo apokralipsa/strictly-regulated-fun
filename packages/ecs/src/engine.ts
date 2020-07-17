@@ -5,7 +5,7 @@ import { defaultStopwatch, Stopwatch } from './stopwatch';
 
 export interface Engine {
   createEntity(): Entity;
-  defineSystem<Q extends Query<any>>(system: System<Q>): Engine;
+  defineSystem<Q extends Query>(system: System<Q>): Engine;
   tick(): void;
   remove(entity: Entity): void;
 }
