@@ -1,8 +1,8 @@
-import { Engine, EngineConfig } from './engine';
-import { Entity } from './entity';
-import { System } from './system';
-import { Component, Flag } from './component';
-import { Entities, QueriedState, Query, Result } from './entities';
+import { Engine, EngineConfig } from "./engine";
+import { Entity } from "./entity";
+import { System } from "./system";
+import { Component, Flag } from "./component";
+import { Entities, QueriedState, Query, Result } from "./entities";
 
 const flagMarker = {};
 
@@ -13,11 +13,11 @@ function typeCheck(component: Component<unknown>, input: unknown) {
       `Could not set component because the data did not pass runtime type check: ${json}`
     );
   }
-};
+}
 
 type EntityState = {
-  [key: string]: any
-}
+  [key: string]: any;
+};
 
 class ViewsAwareEntity implements Entity {
   state: EntityState = {};
@@ -49,7 +49,7 @@ class ViewsAwareEntity implements Entity {
   }
 
   set<T>(component: Component<T>, data: T): Entity {
-    if(this.shouldDoRuntimeChecks){
+    if (this.shouldDoRuntimeChecks) {
       typeCheck(component, data);
     }
 
@@ -69,9 +69,9 @@ class ViewsAwareEntity implements Entity {
   }
 }
 
-class EntitiesGroupedInViews implements Entities{
+class EntitiesGroupedInViews implements Entities {
   private views: View<any>[] = [];
-  private entities= new Set<ViewsAwareEntity>();
+  private entities = new Set<ViewsAwareEntity>();
 
   viewToMatch<Q extends Query>(query: Q): View<Q> {
     return this.existingViewToHandle(query) || this.newViewToHandle(query);
@@ -189,11 +189,7 @@ export class ViewBasedEngine implements Engine {
     const deltaTime = this.config.stopwatch.deltaTimeSinceLastTick;
 
     for (const system of this.systems) {
-      if (system.tick) {
-        system.tick(deltaTime);
-      }
-
-      system.run(this.entities);
+      system.run(this.entities, deltaTime);
     }
   }
 

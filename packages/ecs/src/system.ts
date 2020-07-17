@@ -2,8 +2,7 @@ import { Entities } from './entities';
 
 export interface System {
   readonly name: string;
-  run: (entities: Entities) => void;
-  tick?: (deltaTime: number) => void;
+  run: (entities: Entities, deltaTime: number) => void;
 }
 
 export abstract class StatefulSystem
@@ -15,5 +14,5 @@ export abstract class StatefulSystem
   }
 
 
-  abstract run(entities: Entities): void;
+  abstract run(entities: Entities, deltaTime: number): void;
 }

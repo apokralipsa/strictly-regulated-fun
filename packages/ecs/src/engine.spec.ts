@@ -88,14 +88,13 @@ describe("A system that acts on a component", () => {
 
     engine.defineSystem({
       name: "hp system",
-      tick: (deltaTime) => {
-        receivedDeltaTime = deltaTime;
-      },
-      run: (entities) => {
+      run: (entities, deltaTime) => {
         for (const [entity, state] of entities.findWith({ hp })) {
           receivedEntities = [...receivedEntities, entity];
           receivedData = [...receivedData, state.hp];
         }
+
+        receivedDeltaTime = deltaTime;
       },
     });
 
