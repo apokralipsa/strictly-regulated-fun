@@ -1,7 +1,7 @@
-import { Engine, EngineConfig } from "./engine";
-import { Entity, RuntimeTypeCheck } from "./entity";
-import { CombinationOfComponents, Query, System } from "./system";
-import { Component, Flag, isComponent } from "./component";
+import { Engine, EngineConfig } from './engine';
+import { Entity, RuntimeTypeCheck } from './entity';
+import { CombinationOfComponents, Query, System } from './system';
+import { Component, Flag, isComponent } from './component';
 
 interface View {
   handles(query: Query<any>): boolean;
@@ -279,26 +279,9 @@ class MappingMultiComponentView implements View {
   }
 }
 
-class Clock {
-  private lastTickTime = this.tickTime();
-
-  measuredDelta() {
-    const newTickTime = this.tickTime();
-    const deltaTime = newTickTime - this.lastTickTime;
-    this.lastTickTime = newTickTime;
-
-    return deltaTime;
-  }
-
-  private tickTime() {
-    return new Date().getTime();
-  }
-}
-
 export class ViewBasedEngine implements Engine {
   private views = new Views();
   private systems: SystemWithView[] = [];
-  private clock = new Clock();
 
   constructor(private config: EngineConfig) {}
 
@@ -325,7 +308,7 @@ export class ViewBasedEngine implements Engine {
   }
 
   tick(): void {
-    const deltaTime = this.clock.measuredDelta();
+    const deltaTime = this.config.stopwatch.deltaTimeSinceLastTick;
 
     for (const { system, view } of this.systems) {
       if (system.tick) {

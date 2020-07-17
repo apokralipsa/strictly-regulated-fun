@@ -1,6 +1,7 @@
 import { DoRuntimeTypeChecks, Entity, RuntimeTypeCheck } from './entity';
 import { Query, System } from './system';
 import { ViewBasedEngine } from './view-based-engine';
+import { defaultStopwatch, Stopwatch } from './stopwatch';
 
 export interface Engine {
   createEntity(): Entity;
@@ -11,10 +12,12 @@ export interface Engine {
 
 export interface EngineConfig {
   typeChecks: RuntimeTypeCheck;
+  stopwatch: Stopwatch;
 }
 
 const defaultEngineConfig: EngineConfig = {
   typeChecks: DoRuntimeTypeChecks,
+  stopwatch: defaultStopwatch()
 };
 
 export function createEngine(config: Partial<EngineConfig> = {}): Engine {
