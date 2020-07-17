@@ -1,5 +1,5 @@
 import { Engine, EngineConfig } from './engine';
-import { Entity, RuntimeTypeCheck } from './entity';
+import { Entity } from './entity';
 import { CombinationOfComponents, Query, System } from './system';
 import { Component, Flag, isComponent } from './component';
 
@@ -22,13 +22,22 @@ interface IndexedData {
 
 const flagMarker = {};
 
+function typeCheck(component: Component<unknown>, input: unknown) {
+  if (component.typeGuard && !component.typeGuard(input)) {
+    const json = JSON.stringify(input);
+    throw new Error(
+      `Could not set component because the data did not pass runtime type check: ${json}`
+    );
+  }
+};
+
 class IndexedEntity implements Entity {
   data: IndexedData = {};
   containingViews = new Set<View>();
 
   constructor(
     private engine: ViewBasedEngine,
-    private typeCheck: RuntimeTypeCheck
+    private shouldDoRuntimeChecks: boolean
   ) {}
 
   get<T>(component: Component<T>): Readonly<T> {
@@ -52,7 +61,9 @@ class IndexedEntity implements Entity {
   }
 
   set<T>(component: Component<T>, data: T): Entity {
-    this.typeCheck(component, data);
+    if(this.shouldDoRuntimeChecks){
+      typeCheck(component, data);
+    }
 
     const isNewComponent = !this.has(component);
     this.data[component.componentId] = data;
