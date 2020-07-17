@@ -1,8 +1,8 @@
-import { createEngine, Engine } from './engine';
-import { Entity } from './entity';
-import { defineComponent, defineFlag } from './component';
-import * as FakeTimers from '@sinonjs/fake-timers';
-import { StatefulSystem, System } from './system';
+import { createEngine, Engine } from "./engine";
+import { Entity } from "./entity";
+import { defineComponent, defineFlag } from "./component";
+import * as FakeTimers from "@sinonjs/fake-timers";
+import { StatefulSystem, System } from "./system";
 
 const hp = defineComponent<number>({ id: "hp" });
 const fireDamage = defineComponent<number>({ id: "fireDamage" });
@@ -39,18 +39,6 @@ describe("Engine", () => {
 
   it("should create entities", () => {
     expect(engine.createEntity()).toBeDefined();
-  });
-
-  it("should not allow to define a system with undefined query", () => {
-    const incorrectSystem = ({
-      name: "incorrect system",
-      query: undefined,
-      run: () => {},
-    } as unknown) as System<any>;
-
-    expect(() => engine.defineSystem(incorrectSystem)).toThrow(
-      "Could not define the system because its query is undefined. Are the components you are trying to use defined before the system?"
-    );
   });
 
   it("should run runtime type checks by default", () => {
@@ -100,13 +88,14 @@ describe("A system that acts on a component", () => {
 
     engine.defineSystem({
       name: "hp system",
-      query: { hp },
       tick: (deltaTime) => {
         receivedDeltaTime = deltaTime;
       },
-      run: (anEntity, data) => {
-        receivedEntities = [...receivedEntities, anEntity];
-        receivedData = [...receivedData, data.hp];
+      run: (entities) => {
+        for (const [entity, state] of entities.findWith({ hp })) {
+          receivedEntities = [...receivedEntities, entity];
+          receivedData = [...receivedData, state.hp];
+        }
       },
     });
 
@@ -202,10 +191,11 @@ describe("A system that acts on a combination of components", () => {
 
     engine.defineSystem({
       name: "fire damage system",
-      query: { hp, fireDamage },
-      run: (entity, data) => {
-        receivedEntities = [...receivedEntities, entity];
-        receivedData = [...receivedData, data];
+      run: (entities) => {
+        for (const [entity, state] of entities.findWith({ hp, fireDamage })) {
+          receivedEntities = [...receivedEntities, entity];
+          receivedData = [...receivedData, state];
+        }
       },
     });
 
@@ -260,16 +250,8 @@ describe("A system that acts on a combination of components", () => {
 
 describe("A system written as a class", () => {
   it("should not require en explicit name", () => {
-    const hp = defineComponent<number>({ id: "hp" });
-    const query = { hp };
-
-    class MySystem extends StatefulSystem<typeof query> {
-      query = query;
+    class MySystem extends StatefulSystem {
       run(): void {}
-
-      constructor() {
-        super();
-      }
     }
 
     createEngine().defineSystem(new MySystem());
@@ -341,25 +323,28 @@ describe("An engine with multiple systems", () => {
 
   engine.defineSystem({
     name: "first",
-    query: { history, foo },
-    run: (matchedEntity, data) => {
-      matchedEntity.set(history, [...data.history, "first"]);
+    run: (entities) => {
+      for (const [entity, state] of entities.findWith({ history, foo })) {
+        entity.set(history, [...state.history, "first"]);
+      }
     },
   });
 
   engine.defineSystem({
     name: "second",
-    query: { history, bar },
-    run: (matchedEntity, data) => {
-      matchedEntity.set(history, [...data.history, "second"]);
+    run: (entities) => {
+      for (const [entity, state] of entities.findWith({ history, bar })) {
+        entity.set(history, [...state.history, "second"]);
+      }
     },
   });
 
   engine.defineSystem({
     name: "third",
-    query: { history },
-    run: (matchedEntity, data) => {
-      matchedEntity.set(history, [...data.history, "third"]);
+    run: (entities) => {
+      for (const [entity, state] of entities.findWith({ history })) {
+        entity.set(history, [...state.history, "third"]);
+      }
     },
   });
 

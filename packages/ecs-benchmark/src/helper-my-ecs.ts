@@ -23,27 +23,33 @@ export const my_ecs = {
 
     engine.defineSystem({
       name: "position system",
-      query: { position },
-      run: () => {},
+      run: (entities) => {
+        for(const result of entities.findWith({position})){
+
+        }
+      },
     });
 
     engine.defineSystem({
       name: "velocity system",
-      query: { position, velocity },
-      run: (entity, data) => {
-        entity.set(position, {
-          x: data.position.x + data.velocity.x,
-          y: data.position.y + data.velocity.y,
-        });
-
-        updates.num++;
+      run: (entities) => {
+        for(const [entity, state] of entities.findWith({position, velocity})){
+          entity.set(position, {
+            x: state.position.x + state.velocity.x,
+            y: state.position.y + state.velocity.y,
+          });
+          updates.num++;
+        }
       },
     });
 
     engine.defineSystem({
       name: "render system",
-      query: { position, velocity, render },
-      run: () => {},
+      run: (entities) => {
+        for(const result of entities.findWith({ position, velocity, render })){
+
+        }
+      },
     });
   },
 

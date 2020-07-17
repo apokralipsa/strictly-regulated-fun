@@ -1,11 +1,11 @@
-import { Entity } from './entity';
-import { Query, System } from './system';
-import { ViewBasedEngine } from './view-based-engine';
-import { defaultStopwatch, Stopwatch } from './stopwatch';
+import { Entity } from "./entity";
+import { System } from "./system";
+import { ViewBasedEngine } from "./view-based-engine";
+import { defaultStopwatch, Stopwatch } from "./stopwatch";
 
 export interface Engine {
   createEntity(): Entity;
-  defineSystem<Q extends Query>(system: System<Q>): Engine;
+  defineSystem(system: System): Engine;
   tick(): void;
   remove(entity: Entity): void;
 }

@@ -1,12 +1,8 @@
 import { Engine, EngineConfig } from './engine';
 import { Entity } from './entity';
-import { Query, Result, System } from './system';
+import { System } from './system';
 import { Component, Flag } from './component';
-
-interface SystemWithView {
-  system: System<any>;
-  view: View;
-}
+import { Entities, QueriedState, Query, Result } from './entities';
 
 const flagMarker = {};
 
@@ -19,9 +15,13 @@ function typeCheck(component: Component<unknown>, input: unknown) {
   }
 };
 
+type EntityState = {
+  [key: string]: any
+}
+
 class ViewsAwareEntity implements Entity {
-  data: Result<Query> = {};
-  containingViews = new Set<View>();
+  state: EntityState = {};
+  containingViews = new Set<View<any>>();
 
   constructor(
     private engine: ViewBasedEngine,
@@ -29,20 +29,20 @@ class ViewsAwareEntity implements Entity {
   ) {}
 
   get<T>(component: Component<T>): Readonly<T> {
-    if (!this.data.hasOwnProperty(component.componentId)) {
+    if (!this.state.hasOwnProperty(component.componentId)) {
       throw new Error("Entity does not contain the requested component");
     }
-    return this.data[component.componentId] as Readonly<T>;
+    return this.state[component.componentId] as Readonly<T>;
   }
 
   has(component: Component<any>): boolean {
-    return this.data.hasOwnProperty(component.componentId);
+    return this.state.hasOwnProperty(component.componentId);
   }
 
   remove(component: Component<any>): Entity {
     const hadComponent = this.has(component);
     if (hadComponent) {
-      delete this.data[component.componentId];
+      delete this.state[component.componentId];
       this.containingViews.forEach((view) => view.retest(this));
     }
     return this;
@@ -54,7 +54,7 @@ class ViewsAwareEntity implements Entity {
     }
 
     const isNewComponent = !this.has(component);
-    this.data[component.componentId] = data;
+    this.state[component.componentId] = data;
 
     if (isNewComponent) {
       this.engine.componentAdded(this);
@@ -69,11 +69,11 @@ class ViewsAwareEntity implements Entity {
   }
 }
 
-class Views {
-  private views: View[] = [];
+class EntitiesGroupedInViews implements Entities{
+  private views: View<any>[] = [];
   private entities= new Set<ViewsAwareEntity>();
 
-  viewToMatch(query: Query): View {
+  viewToMatch<Q extends Query>(query: Q): View<Q> {
     return this.existingViewToHandle(query) || this.newViewToHandle(query);
   }
 
@@ -89,12 +89,22 @@ class Views {
     }
   }
 
-  private existingViewToHandle(query: Query): View | undefined {
+  componentAddedTo(entity: ViewsAwareEntity) {
+    for (const view of this.views) {
+      view.test(entity);
+    }
+  }
+
+  findWith<Q extends Query>(query: Q): Result<Q> {
+    return this.viewToMatch(query).getAllEntities();
+  }
+
+  private existingViewToHandle<Q extends Query>(query: Q): View<Q> | undefined {
     return this.views.find((view) => view.handles(query));
   }
 
-  private newViewToHandle(query: Query): View {
-    const newView = new View(query);
+  private newViewToHandle<Q extends Query>(query: Q): View<Q> {
+    const newView = new View<Q>(query);
 
     for (const entity of this.entities) {
       newView.test(entity);
@@ -103,16 +113,10 @@ class Views {
     this.views.push(newView);
     return newView;
   }
-
-  componentAddedTo(entity: ViewsAwareEntity) {
-    for (const view of this.views) {
-      view.test(entity);
-    }
-  }
 }
 
-class View {
-  private readonly matchedEntities = new Set<ViewsAwareEntity>();
+class View<Q extends Query> {
+  private readonly result: Result<Q> = new Map<Entity, QueriedState<Q>>();
   private readonly componentNames: string[];
 
   constructor(private query: Query) {
@@ -127,33 +131,31 @@ class View {
     );
   }
 
-  forEach(act: (entity: Entity, data: any) => void): void {
-    for (const entity of this.matchedEntities) {
-      act(entity, entity.data);
-    }
+  getAllEntities(): Result<Q> {
+    return this.result;
   }
 
   test(entity: ViewsAwareEntity): void {
-    if (this.queryIsMatchedBy(entity)) {
-      this.matchedEntities.add(entity);
+    if (this.queryIsMatchedBy(entity.state)) {
+      this.result.set(entity, entity.state);
       entity.containingViews.add(this);
     }
   }
 
   retest(entity: ViewsAwareEntity): void {
-    if (!this.queryIsMatchedBy(entity)) {
+    if (!this.queryIsMatchedBy(entity.state)) {
       this.remove(entity);
       entity.containingViews.delete(this);
     }
   }
 
   remove(entity: ViewsAwareEntity): void {
-    this.matchedEntities.delete(entity);
+    this.result.delete(entity);
   }
 
-  private queryIsMatchedBy(entity: ViewsAwareEntity) {
+  private queryIsMatchedBy(state: EntityState): state is QueriedState<Q> {
     return this.componentNames.every((componentName) =>
-      entity.data.hasOwnProperty(componentName)
+      state.hasOwnProperty(componentName)
     );
   }
 
@@ -163,48 +165,39 @@ class View {
 }
 
 export class ViewBasedEngine implements Engine {
-  private views = new Views();
-  private systems: SystemWithView[] = [];
+  private entities = new EntitiesGroupedInViews();
+  private systems: System[] = [];
 
   constructor(private config: EngineConfig) {}
 
   createEntity(): Entity {
     let newEntity = new ViewsAwareEntity(this, this.config.typeChecks);
-    this.views.add(newEntity);
+    this.entities.add(newEntity);
     return newEntity;
   }
 
-  defineSystem<Q extends Query>(system: System<Q>): Engine {
-    if (!system.query) {
-      throw new Error(
-        "Could not define the system because its query is undefined. Are the components you are trying to use defined before the system?"
-      );
-    }
-
-    const view = this.views.viewToMatch(system.query);
-    this.systems.push({ system, view });
+  defineSystem(system: System): Engine {
+    this.systems.push(system);
     return this;
   }
 
   remove(entity: Entity): void {
-    this.views.remove(entity as ViewsAwareEntity);
+    this.entities.remove(entity as ViewsAwareEntity);
   }
 
   tick(): void {
     const deltaTime = this.config.stopwatch.deltaTimeSinceLastTick;
 
-    for (const { system, view } of this.systems) {
+    for (const system of this.systems) {
       if (system.tick) {
         system.tick(deltaTime);
       }
 
-      view.forEach((entity, data) => {
-        system.run(entity, data);
-      });
+      system.run(this.entities);
     }
   }
 
   componentAdded(entity: ViewsAwareEntity) {
-    this.views.componentAddedTo(entity);
+    this.entities.componentAddedTo(entity);
   }
 }
