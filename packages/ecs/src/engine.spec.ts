@@ -1,9 +1,8 @@
-import { createEngine, Engine } from "./engine";
-import { Entity, SkipRuntimeTypeChecks } from "./entity";
-import { Component, defineComponent, defineFlag } from "./component";
-import * as FakeTimers from "@sinonjs/fake-timers";
-import { StatefulSystem, System } from "./system";
-
+import { createEngine, Engine } from './engine';
+import { Entity, SkipRuntimeTypeChecks } from './entity';
+import { defineComponent, defineFlag } from './component';
+import * as FakeTimers from '@sinonjs/fake-timers';
+import { StatefulSystem, System } from './system';
 
 const hp = defineComponent<number>({ id: "hp" });
 const fireDamage = defineComponent<number>({ id: "fireDamage" });
