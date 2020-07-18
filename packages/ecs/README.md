@@ -37,7 +37,7 @@ engine.defineSystem({
   },
 });
 
-while(true){
+while (true) {
   engine.tick();
 }
 ```
@@ -133,19 +133,50 @@ myEntity.remove(velocity);
 ```
 
 At some point you may want to remove the entities.
+
 ```typescript
 engine.remove(myEntity);
 ```
 
 ### Defining systems
 
+System set up the logic and behaviour that act on the components held in entities.
+The simplest way to define a system is to pass an object to `defineSystem` method on an engine.
 
+The object needs to have a name, and a method called `run`.
+On each execution of the [tick method](#the-tick-method), the `run` method of all system will be run.
+The run method accepts two parameters:
+
+1. The `Entities` object - you can use it to find and act on entities
+2. The `deltaTime` - by default, the number of milliseconds since the last tick (see [Measuring the passage of time](#measuring-the-passage-of-time))
+
+The systems will be called in the order they are defined.
+
+```typescript
+engine.defineSystem({
+  name: "velocity system",
+  run: (entities) => {
+    for (const [entity, state] of entities.thatHave({
+      position,
+      velocity,
+    })) {
+      state.position.x += state.velocity.x;
+      state.position.y += state.velocity.y;
+    }
+  },
+});
+```
 
 ### Mutating entity state
 
-> TODO: mutating state is cheap, adding / removing components can be costly
+As you can see in the section above you can directly modify the state of the queried object.
+**This is much cheaper in terms of performance than calling the `set` method.**
+Use this method whenever you don't need to explicitly add a new component to an entity.
 
 ### The 'tick' method
+
+Use the 'tick' method of the engine to run all defined systems once.
+You will most likely want to call it once every frame.
 
 ### Type checks at runtime
 
@@ -190,6 +221,34 @@ const myEngine = createEngine({ typeChecks: false });
 The engine queries an implementation of the `Stopwatch` interface once for each call of `tick()` method.
 A stopwatch can be passed when creating an engine. Default value uses the `Date` class and returns delta time in milliseconds.
 
-> TODO: describe using external delta time
-> TODO: describe constant delta stopwatch (usefull for machine learning etc.)
-> TODO: describe slow-mo stopwatch
+If the framework you are using already provides the delta time you can use that instead.
+
+```typescript
+const externalStopwatch = {
+  deltaTimeSinceLastTick: 0,
+};
+
+const engine = createEngine({ stopwatch: externalStopwatch });
+
+// later on
+externalStopwatch.deltaTimeSinceLastTick = someValue; // some value provided by the framework
+engine.tick();
+```
+
+In some cases you may want to disable rendering of your entities and run as many ticks as quickly as possible.
+One example is training an AI using machine learning.
+In such case you may simulate a stable 60 fps framerate so that the physics do not need to be adjusted.
+
+```typescript
+const constantStopwatch = {
+  deltaTimeSinceLastTick: 1000 / 60,
+};
+
+const engine = createEngine({ stopwatch: constantStopwatch });
+
+while (shouldRunSimulation) {
+  engine.tick();
+}
+```
+
+You can also roll your own implementation of a stop watch for example to implement a slo-mo mode.
