@@ -1,8 +1,8 @@
-import { Engine, EngineConfig } from './engine';
-import { Entity } from './entity';
-import { System } from './system';
-import { Component, Flag } from './component';
-import { Entities, QueriedState, Query, Result } from './entities';
+import { Engine, EngineConfig } from "./engine";
+import { Entity } from "./entity";
+import { System } from "./system";
+import { Component, Flag } from "./component";
+import { Entities, QueriedState, Query, Result } from "./entities";
 
 const flagMarker = {};
 
@@ -41,7 +41,7 @@ class ViewsAwareEntity implements Entity {
   remove(component: Component<any>): Entity {
     const hadComponent = this.has(component);
     if (hadComponent) {
-      delete this.state[component.componentId]
+      delete this.state[component.componentId];
       this.views.componentRemovedFrom(this);
     }
     return this;
@@ -170,7 +170,9 @@ class View<Q extends Query> {
   }
 
   private queryIsMatchedBy(state: EntityState): state is QueriedState<Q> {
-    return this.componentIds.every((componentName) => state.hasOwnProperty(componentName));
+    return this.componentIds.every((componentName) =>
+      state.hasOwnProperty(componentName)
+    );
   }
 
   private componentIdsIn(query: Query) {

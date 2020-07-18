@@ -1,4 +1,4 @@
-import { Component, Flag } from './component';
+import { Component, Flag } from "./component";
 
 export interface Entity {
   set<T>(component: Component<T>, data: T): Entity;
@@ -7,4 +7,3 @@ export interface Entity {
   has(component: Component<any>): boolean;
   remove(component: Component<any>): Entity;
 }
-

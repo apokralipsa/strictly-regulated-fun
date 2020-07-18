@@ -2,7 +2,7 @@ import { createEngine, Engine } from "./engine";
 import { Entity } from "./entity";
 import { defineComponent, defineFlag } from "./component";
 import * as FakeTimers from "@sinonjs/fake-timers";
-import { StatefulSystem, System } from "./system";
+import { StatefulSystem } from "./system";
 
 const hp = defineComponent<number>({ id: "hp" });
 const fireDamage = defineComponent<number>({ id: "fireDamage" });
