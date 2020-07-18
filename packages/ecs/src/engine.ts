@@ -6,8 +6,8 @@ import { defaultStopwatch, Stopwatch } from "./stopwatch";
 export interface Engine {
   createEntity(): Entity;
   defineSystem(system: System): Engine;
-  tick(): void;
-  remove(entity: Entity): void;
+  tick(): Engine;
+  remove(entity: Entity): Engine;
 }
 
 export interface EngineConfig {
@@ -15,11 +15,11 @@ export interface EngineConfig {
   stopwatch: Stopwatch;
 }
 
-const defaultEngineConfig: EngineConfig = {
+const createDefaultEngineConfig: () => EngineConfig = () => ({
   typeChecks: true,
   stopwatch: defaultStopwatch(),
-};
+});
 
 export function createEngine(config: Partial<EngineConfig> = {}): Engine {
-  return new ViewBasedEngine({ ...defaultEngineConfig, ...config });
+  return new ViewBasedEngine({ ...createDefaultEngineConfig(), ...config });
 }

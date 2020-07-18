@@ -197,15 +197,18 @@ export class ViewBasedEngine implements Engine {
     return this;
   }
 
-  remove(entity: Entity): void {
+  remove(entity: Entity): Engine {
     this.entities.remove(entity as ViewsAwareEntity);
+    return this;
   }
 
-  tick(): void {
+  tick(): Engine {
     const deltaTime = this.config.stopwatch.deltaTimeSinceLastTick;
 
     for (const system of this.systems) {
       system.run(this.entities, deltaTime);
     }
+
+    return this;
   }
 }

@@ -1,66 +1,10 @@
-import { createEngine, Engine } from "./engine";
-import { Entity } from "./entity";
-import { defineComponent, defineFlag } from "./component";
-import * as FakeTimers from "@sinonjs/fake-timers";
-import { StatefulSystem } from "./system";
-
-const hp = defineComponent<number>({ id: "hp" });
-const fireDamage = defineComponent<number>({ id: "fireDamage" });
-const poisonDamage = defineComponent<number>({ id: "poisonDamage" });
-
-interface Vector2D {
-  x: number;
-  y: number;
-}
-
-function typeGuard(input: any): input is Vector2D {
-  return input && typeof input.x === "number" && typeof input.y === "number";
-}
-
-let position = defineComponent<Vector2D>({ id: "position" });
-let velocity = defineComponent<Vector2D>({ id: "velocity" });
-let unknownComponent = defineComponent<unknown>({ id: "unknown" });
-let strictPosition = defineComponent<Vector2D>({
-  id: "strict position",
-  typeGuard,
-});
-let dirty = defineFlag({ id: "dirty" });
-
-describe("Engine", () => {
-  let engine: Engine = createEngine();
-
-  beforeEach(() => {
-    engine = createEngine();
-  });
-
-  it("should be created", () => {
-    expect(engine).toBeDefined();
-  });
-
-  it("should create entities", () => {
-    expect(engine.createEntity()).toBeDefined();
-  });
-
-  it("should run runtime type checks by default", () => {
-    expect(() =>
-      engine
-        .createEntity()
-        .set(strictPosition, ({ foo: "bar" } as any) as Vector2D)
-    ).toThrow();
-  });
-
-  it("should give an option to disable runtime type checks", () => {
-    expect(() =>
-      createEngine({ typeChecks: false })
-        .createEntity()
-        .set(strictPosition, ({ foo: "bar" } as any) as Vector2D)
-    ).not.toThrow();
-  });
-});
+import { createEngine, Engine } from './engine';
+import { Entity } from './entity';
+import { dirty, fireDamage, hp, poisonDamage } from './component.spec.fixture';
+import { StatefulSystem } from './system';
+import { defineComponent, defineFlag } from './component';
 
 describe("A system that acts on a component", () => {
-  let clock: FakeTimers.InstalledClock;
-
   let engine: Engine;
 
   let matchingEntity: Entity;
@@ -68,15 +12,6 @@ describe("A system that acts on a component", () => {
 
   let receivedEntities: Entity[];
   let receivedData: number[];
-  let receivedDeltaTime: number;
-
-  beforeAll(() => {
-    clock = FakeTimers.install();
-  });
-
-  afterAll(() => {
-    clock.uninstall();
-  });
 
   beforeEach(() => {
     receivedEntities = [];
@@ -88,13 +23,11 @@ describe("A system that acts on a component", () => {
 
     engine.defineSystem({
       name: "hp system",
-      run: (entities, deltaTime) => {
+      run: (entities) => {
         for (const [entity, state] of entities.thatHave({ hp })) {
           receivedEntities = [...receivedEntities, entity];
           receivedData = [...receivedData, state.hp];
         }
-
-        receivedDeltaTime = deltaTime;
       },
     });
 
@@ -106,24 +39,13 @@ describe("A system that acts on a component", () => {
     expect(receivedData).toEqual([42]);
   });
 
-  it("should be informed that no passage of time has happened yet", () => {
-    expect(receivedDeltaTime).toBe(0);
-  });
-
-  describe("when next engine tick occurs after some time has passed", () => {
-    const passedMillis = 20;
-
+  describe("when next engine tick occurs ", () => {
     beforeEach(() => {
-      clock.tick(20);
       engine.tick();
     });
 
     it("should receive the same entity again", () => {
       expect(receivedEntities).toEqual([matchingEntity, matchingEntity]);
-    });
-
-    it("should be informed that some time has passed", () => {
-      expect(receivedDeltaTime).toBe(passedMillis);
     });
   });
 
@@ -254,58 +176,6 @@ describe("A system written as a class", () => {
     }
 
     createEngine().defineSystem(new MySystem());
-  });
-});
-
-describe("Entity", () => {
-  const incorrectDataInJson = JSON.stringify({ foo: "bar" });
-
-  let entity: Entity;
-
-  beforeEach(() => {
-    entity = createEngine().createEntity();
-  });
-
-  it("should inform what components it has", () => {
-    entity.set(hp, 42);
-
-    expect(entity.has(hp)).toBe(true);
-    expect(entity.has(fireDamage)).toBe(false);
-  });
-
-  it("should return the components it has", () => {
-    entity.set(position, { x: 1, y: 1 }).set(velocity, { x: 0, y: 0 });
-
-    const returnedPosition: Readonly<Vector2D> = entity.get(position);
-    const returnedVelocity: Readonly<Vector2D> = entity.get(velocity);
-
-    expect(returnedPosition).toEqual({ x: 1, y: 1 });
-    expect(returnedVelocity).toEqual({ x: 0, y: 0 });
-  });
-
-  it("should throw an error if a component is missing", () => {
-    expect(() => entity.get(unknownComponent)).toThrow(
-      "Entity does not contain the requested component"
-    );
-  });
-
-  it("should run runtime checks for components that define them by default", () => {
-    expect(() =>
-      entity.set(position, JSON.parse(incorrectDataInJson))
-    ).not.toThrow();
-
-    expect(() =>
-      entity.set(strictPosition, JSON.parse(incorrectDataInJson))
-    ).toThrow(
-      `Could not set component because the data did not pass runtime type check: ${incorrectDataInJson}`
-    );
-  });
-
-  it("should allow to set a flag without passing any data", () => {
-    entity.setFlag(dirty);
-
-    expect(entity.has(dirty)).toBe(true);
-    expect(() => entity.get(dirty)).not.toThrow();
   });
 });
 

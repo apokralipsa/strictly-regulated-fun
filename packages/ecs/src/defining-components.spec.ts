@@ -1,28 +1,20 @@
 import { Component, defineComponent, defineFlag } from "./component";
-
-export interface Position {
-  x: number;
-  y: number;
-}
-
-export function isPosition(input: any): input is Position {
-  return typeof input.x === "number" && typeof input.y === "number";
-}
+import { isVector2d, Vector2D } from "./component.spec.fixture";
 
 describe("Component", () => {
   it("should be defined and specify the type of data it holds", () => {
-    const position: Component<Position> = defineComponent<Position>({
+    const position: Component<Vector2D> = defineComponent<Vector2D>({
       id: "position",
     });
     expect(position).toBeDefined();
   });
 
-  it("should allow to provide runtime type checking mechanims", () => {
-    const position = defineComponent<Position>({
+  it("should allow to provide runtime type checking mechanism", () => {
+    const position = defineComponent<Vector2D>({
       id: "strict position",
-      typeGuard: isPosition,
+      typeGuard: isVector2d,
     });
-    expect(position.typeGuard).toBe(isPosition);
+    expect(position.typeGuard).toBe(isVector2d);
   });
 
   it('should allow to create "flag" components with no data', () => {

@@ -2,7 +2,7 @@
   "name": "ecs",
   "version": "0.0.0",
   "description": "> TODO: description",
-  "author": "Jakub Stawiarski <jakub.stawiarski@vattenfall.com>",
+  "author": "Jakub Stawiarski <stawiarskijakub@gmail.com>",
   "homepage": "",
   "license": "ISC",
   "main": "lib/ecs.js",
