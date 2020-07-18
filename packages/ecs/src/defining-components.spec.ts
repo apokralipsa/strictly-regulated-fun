@@ -1,24 +1,22 @@
-import { Component, defineComponent, defineFlag } from "./component";
-import { isVector2d, Vector2D } from "./component.spec.fixture";
+import { as, asFlag, Component, define } from './component';
+import { isVector2d, Vector2D } from './component.spec.fixture';
 
 describe("Component", () => {
   it("should be defined and specify the type of data it holds", () => {
-    const position: Component<Vector2D> = defineComponent<Vector2D>({
-      id: "position",
-    });
+    const { position } = define({ position: as<Vector2D>() });
     expect(position).toBeDefined();
   });
 
   it("should allow to provide runtime type checking mechanism", () => {
-    const position = defineComponent<Vector2D>({
-      id: "strict position",
-      typeGuard: isVector2d,
+    const { strictPosition } = define({
+      strictPosition: as<Vector2D>({ typeGuard: isVector2d }),
     });
-    expect(position.typeGuard).toBe(isVector2d);
+
+    expect(strictPosition.typeGuard).toBe(isVector2d);
   });
 
   it('should allow to create "flag" components with no data', () => {
-    const flag: Component<void> = defineFlag({ id: "my flag" });
+    const { flag } = define({ "flag": asFlag() });
     expect(flag).toBeDefined();
   });
 });

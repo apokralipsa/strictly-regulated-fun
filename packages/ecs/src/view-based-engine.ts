@@ -176,7 +176,7 @@ class View<Q extends Query> {
   }
 
   private componentIdsIn(query: Query) {
-    return Object.keys(query);
+    return Object.values(query).map(component => component.componentId);
   }
 }
 

@@ -5,27 +5,41 @@ export interface Component<T> {
   readonly typeGuard?: TypeGuard<T>;
 }
 
-export type Flag = Component<any>;
+export type Flag = Component<unknown>;
 
 export function isComponent(input: any): input is Component<any> {
   return input && input.componentId;
 }
 
 interface ComponentDefinitionOptions<T> {
-  id: string;
   typeGuard?: TypeGuard<T>;
 }
 
-export function defineComponent<T>(
-  options: ComponentDefinitionOptions<T>
-): Component<T> {
-  return { componentId: options.id, typeGuard: options.typeGuard };
+interface ComponentsToDefine<T> {
+  [id: string]: ComponentDefinitionOptions<T>;
 }
 
-interface FlagDefinitionOptions {
-  id: string;
+type Result<T, C extends ComponentsToDefine<T>> = {
+  [id in keyof C]: Component<T>;
+};
+
+export function define<T, C extends ComponentsToDefine<T>>(
+  componentsToDefine: C & ComponentsToDefine<T>
+): Result<T, C> {
+  return Object.fromEntries(
+    Object.entries(componentsToDefine).map(([id, options]) => [
+      id,
+      { componentId: id, typeGuard: options.typeGuard },
+    ])
+  ) as Result<T, C>;
 }
 
-export function defineFlag(options: FlagDefinitionOptions): Flag {
-  return { componentId: options.id };
+export function as<T>(
+  options?: ComponentDefinitionOptions<T>
+): ComponentDefinitionOptions<T> {
+  return options || {};
+}
+
+export function asFlag(): ComponentDefinitionOptions<unknown>{
+  return {};
 }
