@@ -7,10 +7,6 @@ export interface Component<T> {
 
 export type Flag = Component<unknown>;
 
-export function isComponent(input: any): input is Component<any> {
-  return input && input.componentId;
-}
-
 interface ComponentDefinitionOptions<T> {
   typeGuard?: TypeGuard<T>;
 }
