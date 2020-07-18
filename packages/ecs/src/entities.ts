@@ -6,11 +6,11 @@ export type Query = {
 };
 
 export type QueriedState<Q extends Query> = {
-  [key in keyof Q]: Q[key] extends Component<infer T> ? Readonly<T> : never;
+  [key in keyof Q]: Q[key] extends Component<infer T> ? T : never;
 };
 
 export type Result<Q extends Query> = Map<Entity, QueriedState<Q>>;
 
 export interface Entities {
-  findWith<Q extends Query>(query: Q): Result<Q>;
+  thatHave<Q extends Query>(query: Q): Result<Q>;
 }

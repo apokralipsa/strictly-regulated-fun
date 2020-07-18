@@ -8,10 +8,10 @@ interface Vector2D {
   y: number;
 }
 
-const position = defineComponent<Vector2D>({id: "position"});
-const velocity = defineComponent<Vector2D>({id: "velocity"});
-const render = defineFlag({id: "render"});
-const history = defineComponent<string>({id: "history"});
+const position = defineComponent<Vector2D>({ id: "position" });
+const velocity = defineComponent<Vector2D>({ id: "velocity" });
+const render = defineFlag({ id: "render" });
+const history = defineComponent<string>({ id: "history" });
 
 let updates = { num: 0 };
 
@@ -24,20 +24,19 @@ export const my_ecs = {
     engine.defineSystem({
       name: "position system",
       run: (entities) => {
-        for(const result of entities.findWith({position})){
-
-        }
+        entities.thatHave({ position });
       },
     });
 
     engine.defineSystem({
       name: "velocity system",
       run: (entities) => {
-        for(const [entity, state] of entities.findWith({position, velocity})){
-          entity.set(position, {
-            x: state.position.x + state.velocity.x,
-            y: state.position.y + state.velocity.y,
-          });
+        for (const [_, state] of entities.thatHave({
+          position,
+          velocity,
+        })) {
+          state.position.x += state.velocity.x;
+          state.position.y += state.velocity.y;
           updates.num++;
         }
       },
@@ -46,9 +45,11 @@ export const my_ecs = {
     engine.defineSystem({
       name: "render system",
       run: (entities) => {
-        for(const result of entities.findWith({ position, velocity, render })){
-
-        }
+        entities.thatHave({
+          position,
+          velocity,
+          render,
+        });
       },
     });
   },

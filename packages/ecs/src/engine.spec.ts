@@ -89,7 +89,7 @@ describe("A system that acts on a component", () => {
     engine.defineSystem({
       name: "hp system",
       run: (entities, deltaTime) => {
-        for (const [entity, state] of entities.findWith({ hp })) {
+        for (const [entity, state] of entities.thatHave({ hp })) {
           receivedEntities = [...receivedEntities, entity];
           receivedData = [...receivedData, state.hp];
         }
@@ -191,7 +191,7 @@ describe("A system that acts on a combination of components", () => {
     engine.defineSystem({
       name: "fire damage system",
       run: (entities) => {
-        for (const [entity, state] of entities.findWith({ hp, fireDamage })) {
+        for (const [entity, state] of entities.thatHave({ hp, fireDamage })) {
           receivedEntities = [...receivedEntities, entity];
           receivedData = [...receivedData, state];
         }
@@ -323,8 +323,8 @@ describe("An engine with multiple systems", () => {
   engine.defineSystem({
     name: "first",
     run: (entities) => {
-      for (const [entity, state] of entities.findWith({ history, foo })) {
-        entity.set(history, [...state.history, "first"]);
+      for (const [_, state] of entities.thatHave({ history, foo })) {
+        state.history = [...state.history, "first"];
       }
     },
   });
@@ -332,8 +332,8 @@ describe("An engine with multiple systems", () => {
   engine.defineSystem({
     name: "second",
     run: (entities) => {
-      for (const [entity, state] of entities.findWith({ history, bar })) {
-        entity.set(history, [...state.history, "second"]);
+      for (const [_, state] of entities.thatHave({ history, bar })) {
+        state.history = [...state.history, "second"];
       }
     },
   });
@@ -341,8 +341,8 @@ describe("An engine with multiple systems", () => {
   engine.defineSystem({
     name: "third",
     run: (entities) => {
-      for (const [entity, state] of entities.findWith({ history })) {
-        entity.set(history, [...state.history, "third"]);
+      for (const [_, state] of entities.thatHave({ history })) {
+        state.history = [...state.history, "third"];
       }
     },
   });

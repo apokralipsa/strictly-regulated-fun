@@ -1,9 +1,8 @@
-import { Engine, EngineConfig } from "./engine";
-import { Entity } from "./entity";
-import { System } from "./system";
-import { Component, Flag } from "./component";
-import { Entities, QueriedState, Query, Result } from "./entities";
-import { performance } from "perf_hooks";
+import { Engine, EngineConfig } from './engine';
+import { Entity } from './entity';
+import { System } from './system';
+import { Component, Flag } from './component';
+import { Entities, QueriedState, Query, Result } from './entities';
 
 const flagMarker = {};
 
@@ -21,64 +20,45 @@ type EntityState = {
 };
 
 class ViewsAwareEntity implements Entity {
-  internalState = new Map<string, any>();
-  private cachedStateObject: EntityState | null = null;
-
-  containingViews = new Set<View<any>>();
-
-  get state() {
-    if (!this.cachedStateObject) {
-      this.cachedStateObject = Object.fromEntries(this.internalState.entries());
-    }
-    return this.cachedStateObject;
-  }
+  state: EntityState = {};
 
   constructor(
-    private engine: ViewBasedEngine,
+    private views: EntitiesGroupedInViews,
     private shouldDoRuntimeChecks: boolean
   ) {}
 
-  get<T>(component: Component<T>): Readonly<T> {
+  get<T>(component: Component<T>): T {
     if (!this.has(component)) {
       throw new Error("Entity does not contain the requested component");
     }
-    return this.internalState.get(component.componentId) as Readonly<T>;
+    return this.state[component.componentId] as T;
   }
 
   has(component: Component<any>): boolean {
-    return this.internalState.has(component.componentId);
+    return this.state.hasOwnProperty(component.componentId);
   }
 
   remove(component: Component<any>): Entity {
     const hadComponent = this.has(component);
     if (hadComponent) {
-      this.internalState.delete(component.componentId);
-      this.cachedStateObject = null;
-      this.containingViews.forEach((view) => view.retest(this));
+      delete this.state[component.componentId]
+      this.views.componentRemovedFrom(this);
     }
     return this;
   }
 
   set<T>(component: Component<T>, data: T): Entity {
-    // performance.mark("Setting component");
     if (this.shouldDoRuntimeChecks) {
       typeCheck(component, data);
     }
 
     const isNewComponent = !this.has(component);
-    this.internalState.set(component.componentId, data);
-    this.cachedStateObject = null;
+    this.state[component.componentId] = data;
 
     if (isNewComponent) {
-      this.engine.componentAdded(this);
+      this.views.componentAddedTo(this);
     }
 
-    // performance.mark("Component set");
-    // performance.measure(
-    //   "Setting components",
-    //   "Setting component",
-    //   "Component set"
-    // );
     return this;
   }
 
@@ -89,47 +69,60 @@ class ViewsAwareEntity implements Entity {
 }
 
 class EntitiesGroupedInViews implements Entities {
-  private views: View<any>[] = [];
-  private entities = new Set<ViewsAwareEntity>();
+  private entityViews = new Map<Entity, Set<View<any>>>();
+  private allViews: View<any>[] = [];
 
   viewToMatch<Q extends Query>(query: Q): View<Q> {
     return this.existingViewToHandle(query) || this.newViewToHandle(query);
   }
 
   add(entity: ViewsAwareEntity) {
-    this.entities.add(entity);
+    this.entityViews.set(entity, new Set());
   }
 
   remove(entity: ViewsAwareEntity) {
-    this.entities.delete(entity);
-
-    for (const view of entity.containingViews) {
+    for (const view of this.entityViews.get(entity)!) {
       view.remove(entity);
     }
+
+    this.entityViews.delete(entity);
   }
 
   componentAddedTo(entity: ViewsAwareEntity) {
-    for (const view of this.views) {
-      view.test(entity);
+    for (const view of this.allViews) {
+      if (view.test(entity)) {
+        this.entityViews.get(entity)!.add(view);
+      }
     }
   }
 
-  findWith<Q extends Query>(query: Q): Result<Q> {
+  componentRemovedFrom(entity: ViewsAwareEntity) {
+    const containingViews = this.entityViews.get(entity)!;
+    for (const view of containingViews) {
+      if (!view.retest(entity)) {
+        containingViews.delete(view);
+      }
+    }
+  }
+
+  thatHave<Q extends Query>(query: Q): Result<Q> {
     return this.viewToMatch(query).getAllEntities();
   }
 
   private existingViewToHandle<Q extends Query>(query: Q): View<Q> | undefined {
-    return this.views.find((view) => view.handles(query));
+    return this.allViews.find((view) => view.handles(query));
   }
 
   private newViewToHandle<Q extends Query>(query: Q): View<Q> {
     const newView = new View<Q>(query);
 
-    for (const entity of this.entities) {
-      newView.test(entity);
+    for (const entity of this.entityViews.keys()) {
+      if (newView.test(entity as ViewsAwareEntity)) {
+        this.entityViews.get(entity)!.add(newView);
+      }
     }
 
-    this.views.push(newView);
+    this.allViews.push(newView);
     return newView;
   }
 }
@@ -143,44 +136,41 @@ class View<Q extends Query> {
   }
 
   handles(query: Query): boolean {
-    // performance.mark('check query')
     const componentIdsInQuery = this.componentIdsIn(query);
-    const result =
+    return (
       this.componentIds.length === componentIdsInQuery.length &&
-      this.componentIds.every((name) => componentIdsInQuery.includes(name));
-    // performance.mark('query checked')
-    // performance.measure('checking queries', 'check query', 'query checked')
-    return result;
+      this.componentIds.every((name) => componentIdsInQuery.includes(name))
+    );
   }
 
   getAllEntities(): Result<Q> {
     return this.result;
   }
 
-  test(entity: ViewsAwareEntity): void {
-    // performance.mark('test')
-    if (this.queryIsMatchedBy(entity.internalState)) {
-      // TODO: avoid the need for cast
-      this.result.set(entity, entity.state as QueriedState<Q>);
-      entity.containingViews.add(this);
+  test(entity: ViewsAwareEntity): boolean {
+    if (this.queryIsMatchedBy(entity.state)) {
+      this.result.set(entity, entity.state);
+      return true;
     }
-    // performance.mark('end test')
-    // performance.measure('testing', 'test', 'end test');
+
+    return false;
   }
 
-  retest(entity: ViewsAwareEntity): void {
-    if (!this.queryIsMatchedBy(entity.internalState)) {
+  retest(entity: ViewsAwareEntity): boolean {
+    if (!this.queryIsMatchedBy(entity.state)) {
       this.remove(entity);
-      entity.containingViews.delete(this);
+      return false;
     }
+
+    return true;
   }
 
   remove(entity: ViewsAwareEntity): void {
     this.result.delete(entity);
   }
 
-  private queryIsMatchedBy(state: Map<string, any>) {
-    return this.componentIds.every((componentName) => state.has(componentName));
+  private queryIsMatchedBy(state: EntityState): state is QueriedState<Q> {
+    return this.componentIds.every((componentName) => state.hasOwnProperty(componentName));
   }
 
   private componentIdsIn(query: Query) {
@@ -195,11 +185,8 @@ export class ViewBasedEngine implements Engine {
   constructor(private config: EngineConfig) {}
 
   createEntity(): Entity {
-    // performance.mark("Creating entity");
-    let newEntity = new ViewsAwareEntity(this, this.config.typeChecks);
+    let newEntity = new ViewsAwareEntity(this.entities, this.config.typeChecks);
     this.entities.add(newEntity);
-    // performance.mark("Entity created");
-    // performance.measure("Entity creation", "Creating entity", "Entity created");
     return newEntity;
   }
 
@@ -209,24 +196,14 @@ export class ViewBasedEngine implements Engine {
   }
 
   remove(entity: Entity): void {
-    // performance.mark("Removing entity");
     this.entities.remove(entity as ViewsAwareEntity);
-    // performance.mark("Entity removed");
-    // performance.measure("Entity removal", "Removing entity", "Entity removed");
   }
 
   tick(): void {
     const deltaTime = this.config.stopwatch.deltaTimeSinceLastTick;
 
-    // performance.mark('Run all systems')
     for (const system of this.systems) {
       system.run(this.entities, deltaTime);
     }
-    // performance.mark('All systems have run')
-    // performance.measure('Running systems', 'Run all systems', 'All systems have run');
-  }
-
-  componentAdded(entity: ViewsAwareEntity) {
-    this.entities.componentAddedTo(entity);
   }
 }
