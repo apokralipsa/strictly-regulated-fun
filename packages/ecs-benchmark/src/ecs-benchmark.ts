@@ -2,10 +2,10 @@ import { my_ecs } from "./helper-my-ecs";
 import { makr_test } from './helper-makr';
 import { performanceMetrics } from './performance-metrics';
 
-const { performance, PerformanceObserver } = require("perf_hooks");
+const { performance } = require("perf_hooks");
 
 const metrics = performanceMetrics();
-const CREATION_COUNT = 200;
+const CREATION_COUNT = 1000;
 
 function createAddUpdateTest(test) {
   return {

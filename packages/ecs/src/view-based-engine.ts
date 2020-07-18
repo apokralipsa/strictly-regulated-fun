@@ -21,8 +21,17 @@ type EntityState = {
 };
 
 class ViewsAwareEntity implements Entity {
-  state: EntityState = {};
+  internalState = new Map<string, any>();
+  private cachedStateObject: EntityState | null = null;
+
   containingViews = new Set<View<any>>();
+
+  get state() {
+    if (!this.cachedStateObject) {
+      this.cachedStateObject = Object.fromEntries(this.internalState.entries());
+    }
+    return this.cachedStateObject;
+  }
 
   constructor(
     private engine: ViewBasedEngine,
@@ -33,37 +42,43 @@ class ViewsAwareEntity implements Entity {
     if (!this.has(component)) {
       throw new Error("Entity does not contain the requested component");
     }
-    return this.state[component.componentId] as Readonly<T>;
+    return this.internalState.get(component.componentId) as Readonly<T>;
   }
 
   has(component: Component<any>): boolean {
-    return this.state.hasOwnProperty(component.componentId);
+    return this.internalState.has(component.componentId);
   }
 
   remove(component: Component<any>): Entity {
     const hadComponent = this.has(component);
     if (hadComponent) {
-      delete this.state[component.componentId];
+      this.internalState.delete(component.componentId);
+      this.cachedStateObject = null;
       this.containingViews.forEach((view) => view.retest(this));
     }
     return this;
   }
 
   set<T>(component: Component<T>, data: T): Entity {
-    performance.mark('Setting component')
-
+    // performance.mark("Setting component");
     if (this.shouldDoRuntimeChecks) {
       typeCheck(component, data);
     }
 
     const isNewComponent = !this.has(component);
-    this.state[component.componentId] = data;
+    this.internalState.set(component.componentId, data);
+    this.cachedStateObject = null;
 
     if (isNewComponent) {
       this.engine.componentAdded(this);
     }
-    performance.mark('Component set')
-    performance.measure('Setting components', 'Setting component', 'Component set')
+
+    // performance.mark("Component set");
+    // performance.measure(
+    //   "Setting components",
+    //   "Setting component",
+    //   "Component set"
+    // );
     return this;
   }
 
@@ -121,18 +136,21 @@ class EntitiesGroupedInViews implements Entities {
 
 class View<Q extends Query> {
   private readonly result: Result<Q> = new Map<Entity, QueriedState<Q>>();
-  private readonly componentNames: string[];
+  private readonly componentIds: string[];
 
   constructor(private query: Query) {
-    this.componentNames = this.componentNamesIn(query);
+    this.componentIds = this.componentIdsIn(query);
   }
 
   handles(query: Query): boolean {
-    const componentNamesInQuery = this.componentNamesIn(query);
-    return (
-      this.componentNames.length === componentNamesInQuery.length &&
-      this.componentNames.every((name) => componentNamesInQuery.includes(name))
-    );
+    // performance.mark('check query')
+    const componentIdsInQuery = this.componentIdsIn(query);
+    const result =
+      this.componentIds.length === componentIdsInQuery.length &&
+      this.componentIds.every((name) => componentIdsInQuery.includes(name));
+    // performance.mark('query checked')
+    // performance.measure('checking queries', 'check query', 'query checked')
+    return result;
   }
 
   getAllEntities(): Result<Q> {
@@ -140,14 +158,18 @@ class View<Q extends Query> {
   }
 
   test(entity: ViewsAwareEntity): void {
-    if (this.queryIsMatchedBy(entity.state)) {
-      this.result.set(entity, entity.state);
+    // performance.mark('test')
+    if (this.queryIsMatchedBy(entity.internalState)) {
+      // TODO: avoid the need for cast
+      this.result.set(entity, entity.state as QueriedState<Q>);
       entity.containingViews.add(this);
     }
+    // performance.mark('end test')
+    // performance.measure('testing', 'test', 'end test');
   }
 
   retest(entity: ViewsAwareEntity): void {
-    if (!this.queryIsMatchedBy(entity.state)) {
+    if (!this.queryIsMatchedBy(entity.internalState)) {
       this.remove(entity);
       entity.containingViews.delete(this);
     }
@@ -157,13 +179,11 @@ class View<Q extends Query> {
     this.result.delete(entity);
   }
 
-  private queryIsMatchedBy(state: EntityState): state is QueriedState<Q> {
-    return this.componentNames.every((componentName) =>
-      state.hasOwnProperty(componentName)
-    );
+  private queryIsMatchedBy(state: Map<string, any>) {
+    return this.componentIds.every((componentName) => state.has(componentName));
   }
 
-  private componentNamesIn(query: Query) {
+  private componentIdsIn(query: Query) {
     return Object.keys(query);
   }
 }
@@ -175,11 +195,11 @@ export class ViewBasedEngine implements Engine {
   constructor(private config: EngineConfig) {}
 
   createEntity(): Entity {
-    performance.mark('Creating entity')
+    // performance.mark("Creating entity");
     let newEntity = new ViewsAwareEntity(this, this.config.typeChecks);
     this.entities.add(newEntity);
-    performance.mark('Entity created')
-    performance.measure('Entity creation', 'Creating entity', 'Entity created');
+    // performance.mark("Entity created");
+    // performance.measure("Entity creation", "Creating entity", "Entity created");
     return newEntity;
   }
 
@@ -189,10 +209,10 @@ export class ViewBasedEngine implements Engine {
   }
 
   remove(entity: Entity): void {
-    performance.mark('Removing entity')
+    // performance.mark("Removing entity");
     this.entities.remove(entity as ViewsAwareEntity);
-    performance.mark('Entity removed')
-    performance.measure('Entity removal', 'Removing entity', 'Entity removed');
+    // performance.mark("Entity removed");
+    // performance.measure("Entity removal", "Removing entity", "Entity removed");
   }
 
   tick(): void {
