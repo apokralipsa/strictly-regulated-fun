@@ -21,5 +21,10 @@
     "benchmark": "^2.1.4",
     "ecs": "^0.0.0",
     "makr": "^2.1.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.4",
+    "jest": "^26.1.0",
+    "ts-jest": "^26.1.3"
   }
 }

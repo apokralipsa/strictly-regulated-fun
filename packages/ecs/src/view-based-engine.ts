@@ -3,6 +3,7 @@ import { Entity } from "./entity";
 import { System } from "./system";
 import { Component, Flag } from "./component";
 import { Entities, QueriedState, Query, Result } from "./entities";
+import { performance } from "perf_hooks";
 
 const flagMarker = {};
 
@@ -29,7 +30,7 @@ class ViewsAwareEntity implements Entity {
   ) {}
 
   get<T>(component: Component<T>): Readonly<T> {
-    if (!this.state.hasOwnProperty(component.componentId)) {
+    if (!this.has(component)) {
       throw new Error("Entity does not contain the requested component");
     }
     return this.state[component.componentId] as Readonly<T>;
@@ -49,6 +50,8 @@ class ViewsAwareEntity implements Entity {
   }
 
   set<T>(component: Component<T>, data: T): Entity {
+    performance.mark('Setting component')
+
     if (this.shouldDoRuntimeChecks) {
       typeCheck(component, data);
     }
@@ -59,7 +62,8 @@ class ViewsAwareEntity implements Entity {
     if (isNewComponent) {
       this.engine.componentAdded(this);
     }
-
+    performance.mark('Component set')
+    performance.measure('Setting components', 'Setting component', 'Component set')
     return this;
   }
 
@@ -171,8 +175,11 @@ export class ViewBasedEngine implements Engine {
   constructor(private config: EngineConfig) {}
 
   createEntity(): Entity {
+    performance.mark('Creating entity')
     let newEntity = new ViewsAwareEntity(this, this.config.typeChecks);
     this.entities.add(newEntity);
+    performance.mark('Entity created')
+    performance.measure('Entity creation', 'Creating entity', 'Entity created');
     return newEntity;
   }
 
@@ -182,15 +189,21 @@ export class ViewBasedEngine implements Engine {
   }
 
   remove(entity: Entity): void {
+    performance.mark('Removing entity')
     this.entities.remove(entity as ViewsAwareEntity);
+    performance.mark('Entity removed')
+    performance.measure('Entity removal', 'Removing entity', 'Entity removed');
   }
 
   tick(): void {
     const deltaTime = this.config.stopwatch.deltaTimeSinceLastTick;
 
+    // performance.mark('Run all systems')
     for (const system of this.systems) {
       system.run(this.entities, deltaTime);
     }
+    // performance.mark('All systems have run')
+    // performance.measure('Running systems', 'Run all systems', 'All systems have run');
   }
 
   componentAdded(entity: ViewsAwareEntity) {
