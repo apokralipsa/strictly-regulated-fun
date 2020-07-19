@@ -1,12 +1,21 @@
 import { Entity } from './entity';
 import { System } from './system';
 import { defaultStopwatch, Stopwatch } from './stopwatch';
-import { Entities, QueriedState, Query, Result } from './entities';
+import { Entities, QueriedState, Query } from './entities';
 import { Component, Flag } from './component';
 
+/**
+ * Central class of the library.
+ * Use an Engine to create / remove entities and define systems.
+ */
 export interface Engine {
   createEntity(): Entity;
   defineSystem(system: System): Engine;
+
+  /**
+   * Runs all defined systems one time, in the order they were defined.
+   * Call this method once every frame.
+   */
   tick(): Engine;
   remove(entity: Entity): Engine;
 }
@@ -127,7 +136,7 @@ class EntitiesGroupedInViews implements Entities {
     }
   }
 
-  thatHave<Q extends Query>(query: Q): Result<Q> {
+  thatHave<Q extends Query>(query: Q): Map<Entity, QueriedState<Q>> {
     return this.viewToMatch(query).getAllEntities();
   }
 
@@ -150,7 +159,7 @@ class EntitiesGroupedInViews implements Entities {
 }
 
 class View<Q extends Query> {
-  private readonly result: Result<Q> = new Map<Entity, QueriedState<Q>>();
+  private readonly result: Map<Entity, QueriedState<Q>> = new Map<Entity, QueriedState<Q>>();
   private readonly componentIds: string[];
 
   constructor(private query: Query) {
@@ -165,7 +174,7 @@ class View<Q extends Query> {
     );
   }
 
-  getAllEntities(): Result<Q> {
+  getAllEntities(): Map<Entity, QueriedState<Q>> {
     return this.result;
   }
 

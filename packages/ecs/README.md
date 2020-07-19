@@ -1,6 +1,7 @@
-# `ecs`
+A light implementation of an [Entity component system](https://en.wikipedia.org/wiki/Entity_component_system) in TypeScript.
 
-An implementation of a [Entity component system](https://en.wikipedia.org/wiki/Entity_component_system) in TypeScript.
+This lib has no external dependencies.
+
 Makes heavy usage of TypeScript types system.
 The focus of the design is to provide the maximum type safety and developer support while not sacrificing any execution speed.
 
@@ -31,6 +32,7 @@ engine.defineSystem({
       position,
       velocity,
     })) {
+      // the state object is fully type safe and offers auto-completion in any IDE
       state.position.x += state.velocity.x;
       state.position.y += state.velocity.y;
     }
@@ -170,6 +172,19 @@ engine.defineSystem({
     }
   },
 });
+```
+
+If your engine is stateful it can be more readable to implement it as a class.
+You can extend the `StatefulSystem` abstract class then.
+
+```typescript
+class PoisonDamageSystem extends StatefulSystem {
+  run(entities: Entities, deltaTime: number): void {
+    // add up delta time and apply damage each second
+  }
+}
+
+createEngine().defineSystem(new PoisonDamageSystem());
 ```
 
 ### Mutating entity state

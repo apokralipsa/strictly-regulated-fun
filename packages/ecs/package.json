@@ -1,9 +1,9 @@
 {
   "name": "ecs",
   "version": "0.0.0",
-  "description": "> TODO: description",
+  "description": "An entity component system library ",
   "author": "Jakub Stawiarski <stawiarskijakub@gmail.com>",
-  "homepage": "",
+  "homepage": "https://github.com/apokralipsa/strictly-regulated-fun",
   "license": "ISC",
   "main": "lib/ecs.js",
   "directories": {

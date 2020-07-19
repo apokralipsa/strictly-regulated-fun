@@ -1,10 +1,20 @@
 type TypeGuard<T> = (input: any) => input is T;
 
+/**
+ * A piece of state that can be added to an Entity.
+ * Entities can be filtered by the Components they have.
+ *
+ * @param <T> the type of data stored by this component
+ */
 export interface Component<T> {
   readonly componentId: string;
   readonly typeGuard?: TypeGuard<T>;
 }
 
+/**
+ * A "marker" component that does not hold any state.
+ * Used only to filter entities.
+ */
 export type Flag = Component<unknown>;
 
 interface ComponentDefinitionOptions<T> {
@@ -21,6 +31,14 @@ type Result<C extends ComponentsToDefine<any>> = {
     : never;
 };
 
+/**
+ * Defines one or more components or flags.
+ * @example
+ * const { hp } = define({ hp: As.a<number>() })
+ *
+ * @param componentsToDefine Object, whose every property becomes an identifier of a component.
+ * @see As
+ */
 export function define<C extends ComponentsToDefine<any>>(
   componentsToDefine: C
 ): Result<C> {
@@ -33,15 +51,32 @@ export function define<C extends ComponentsToDefine<any>>(
   return Object.fromEntries(definedComponents);
 }
 
+/**
+ * Helper object. Provides functions that aid in defining components.
+ */
 export const As = {
+  /**
+   * Defines the type of a component
+   *
+   * @param options Optional component options
+   */
   a<T>(options: ComponentDefinitionOptions<T> = {}) {
     return options;
   },
 
+  /**
+   * An alias for "As.a<type>".
+   *
+   * @param options Optional component options
+   * @see As.a
+   */
   an<T>(options: ComponentDefinitionOptions<T> = {}) {
     return options;
   },
 
+  /**
+   * Defines that the component is a flag and does not store any data.
+   */
   aFlag(): ComponentDefinitionOptions<unknown> {
     return {};
   },
