@@ -1,5 +1,4 @@
-import { createEngine, Engine } from "ecs/lib/engine";
-import { As, define } from "ecs/lib/component";
+import { As, createEngine, define, Engine } from "ecs";
 
 let engine: Engine;
 
