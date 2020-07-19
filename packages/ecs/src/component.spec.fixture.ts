@@ -1,9 +1,9 @@
-import { as, asFlag, define } from "./component";
+import { As, define } from './component';
 
 export const { hp, fireDamage, poisonDamage } = define({
-  hp: as<number>(),
-  fireDamage: as<number>(),
-  poisonDamage: as<number>(),
+  hp: As.a<number>(),
+  fireDamage: As.a<number>(),
+  poisonDamage: As.a<number>()
 });
 
 export interface Vector2D {
@@ -16,11 +16,13 @@ export function isVector2d(input: any): input is Vector2D {
 }
 
 export const { position, velocity, strictPosition } = define({
-  position: as<Vector2D>(),
-  velocity: as<Vector2D>(),
-  strictPosition: as<Vector2D>({ typeGuard: isVector2d }),
+  position: As.a<Vector2D>(),
+  velocity: As.a<Vector2D>(),
+  strictPosition: As.a<Vector2D>({ typeGuard: isVector2d }),
 });
 
-export const { unknownComponent } = define({ unknownComponent: as<unknown>() });
-export const { dirty } = define({ dirty: asFlag() });
+export const { unknownComponent } = define({
+  unknownComponent: As.an<unknown>(),
+});
+export const { dirty } = define({ dirty: As.aFlag() });
 export const incorrectData: any = { foo: "bar" };

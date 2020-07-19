@@ -13,8 +13,8 @@ interface Vector2D {
 }
 
 const { position, velocity } = define({
-  position: as<Vector2D>(),
-  velocity: as<Vector2D>(),
+  position: As.a<Vector2D>(),
+  velocity: As.a<Vector2D>(),
 });
 
 const engine = createEngine();
@@ -37,7 +37,7 @@ engine.defineSystem({
   },
 });
 
-while (true) {
+while (shouldRun) {
   engine.tick();
 }
 ```
@@ -61,7 +61,7 @@ Components can also be used to find entities on which a given system is to act.
 Use the following code to define a component:
 
 ```typescript
-const { hp } = define({ hp: as<number>() });
+const { hp } = define({ hp: As.a<number>() });
 ```
 
 > Note the [object destructuring](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment) on the left-hand side of the line above.
@@ -71,10 +71,10 @@ This syntax allows the compiler to catch errors where the component name would b
 
 ```typescript
 // Component name mismatch
-const { hp } = define({ healthPoints: as<number>() }); // TS2339: Property 'hp' does not exist on type 'Result  ; }>'.
+const { hp } = define({ healthPoints: As.a<number>() }); // TS2339: Property 'hp' does not exist on type 'Result  ; }>'.
 
 // Missing destructuring
-const hp = define({ hp: as<number>() });
+const hp = define({ hp: As.a<number>() });
 createEngine().createEntity().set(hp, 42); // TS2345: Argument of type 'Result<number, { hp: ComponentDefinitionOptions<number>; }>' is not assignable to parameter of type 'Component<number>'.   Property 'componentId' is missing in type 'Result<number, { hp: ComponentDefinitionOptions<number>; }>' but required in type 'Component<number>'.
 ```
 
@@ -87,16 +87,16 @@ interface Vector2D {
   y: number;
 }
 
-const { position } = define({ position: as<Vector2D>() });
+const { position } = define({ position: As.a<Vector2D>() });
 ```
 
-You may also define multiple components **of the same type** in a single call to the `define` function.
+You may also define multiple components in a single call to the `define` function.
 
 ```typescript
-const { position, velocity, acceleration } = define({
-  position: as<Vector2D>(),
-  velocity: as<Vector2D>(),
-  acceleration: as<Vector2D>(),
+const { hp, position, velocity } = define({
+  hp: As.a<number>(),
+  position: As.a<Vector2D>(),
+  velocity: As.a<Vector2D>(),
 });
 ```
 
@@ -106,10 +106,15 @@ You may also create components that do not hold state at all.
 You can use those components (called flags here) to find entities later on.
 
 ```typescript
-const { rendered } = define({ rendered: asFlag() });
+const { rendered } = define({ rendered: As.aFlag() });
 ```
 
 You do not need to specify the type of the data held in the flag.
+
+### Manually defining components
+As the `Component<T>` interface is quite simple you might be tempted to manually create `type`s that use it
+or `interface`s that extend it. **This approach is not recommended as you will lose compile type checks that
+validate internal component ids. You may run into undefined behaviour then.** 
 
 ### Managing entities
 
@@ -183,13 +188,13 @@ You will most likely want to call it once every frame.
 In most cases compile time checks are enough to provide reasonable type safety.
 
 ```typescript
-const { hp } = define({ hp: as<number>() });
+const { hp } = define({ hp: As.a<number>() });
 
 someEntity.set(hp, "low"); // Compile time error: "low" is not assignable to number
 ```
 
 There might be times you would like to provide runtime checks too.
-This might be useful if you read the state of an entity from JSON (like from a http response or from the local storage).
+This might be useful if you read the state of an entity from a non-typesafe source like a http response or the local storage.
 You can then provide a [type guard](https://www.typescriptlang.org/docs/handbook/advanced-types.html#type-guards-and-differentiating-types) when defining a component.
 
 ```typescript
@@ -198,8 +203,8 @@ function isNumber(x: any): x is number {
 }
 
 const { hp, strictHp } = define({
-  hp: as<number>(),
-  strictHp: as<number>({ typeGuard: isNumber }),
+  hp: As.a<number>(),
+  strictHp: As.a<number>({ typeGuard: isNumber }),
 });
 
 const incorrectHp = JSON.parse('{"foo": "bar"}');
@@ -235,7 +240,7 @@ externalStopwatch.deltaTimeSinceLastTick = someValue; // some value provided by 
 engine.tick();
 ```
 
-In some cases you may want to disable rendering of your entities and run as many ticks as quickly as possible.
+In some cases you may want to disable rendering systems and run as many ticks as quickly as possible.
 One example is training an AI using machine learning.
 In such case you may simulate a stable 60 fps framerate so that the physics do not need to be adjusted.
 
@@ -246,9 +251,12 @@ const constantStopwatch = {
 
 const engine = createEngine({ stopwatch: constantStopwatch });
 
-while (shouldRunSimulation) {
+while (shouldRun) {
   engine.tick();
 }
 ```
 
 You can also roll your own implementation of a stop watch for example to implement a slo-mo mode.
+
+> Tip: Use a `get` [accessor](https://www.typescriptlang.org/docs/handbook/classes.html#accessors) if you need to
+> call some logic to calculate the delta.

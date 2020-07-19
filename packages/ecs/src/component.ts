@@ -15,27 +15,34 @@ interface ComponentsToDefine<T> {
   [id: string]: ComponentDefinitionOptions<T>;
 }
 
-type Result<T, C extends ComponentsToDefine<T>> = {
-  [id in keyof C]: Component<T>;
+type Result<C extends ComponentsToDefine<any>> = {
+  [id in keyof C]: C[id] extends ComponentDefinitionOptions<infer T>
+    ? Component<T>
+    : never;
 };
 
-export function define<T, C extends ComponentsToDefine<T>>(
-  componentsToDefine: C & ComponentsToDefine<T>
-): Result<T, C> {
-  return Object.fromEntries(
-    Object.entries(componentsToDefine).map(([id, options]) => [
-      id,
-      { componentId: id, typeGuard: options.typeGuard },
-    ])
-  ) as Result<T, C>;
+export function define<C extends ComponentsToDefine<any>>(
+  componentsToDefine: C
+): Result<C> {
+  const entries = Object.entries(componentsToDefine);
+
+  const definedComponents = entries.map(([id, options]) => {
+    return [id, { componentId: id, ...options }];
+  });
+
+  return Object.fromEntries(definedComponents);
 }
 
-export function as<T>(
-  options?: ComponentDefinitionOptions<T>
-): ComponentDefinitionOptions<T> {
-  return options || {};
-}
+export const As = {
+  a<T>(options: ComponentDefinitionOptions<T> = {}) {
+    return options;
+  },
 
-export function asFlag(): ComponentDefinitionOptions<unknown>{
-  return {};
-}
+  an<T>(options: ComponentDefinitionOptions<T> = {}) {
+    return options;
+  },
+
+  aFlag(): ComponentDefinitionOptions<unknown> {
+    return {};
+  },
+};

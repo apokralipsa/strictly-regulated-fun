@@ -1,5 +1,5 @@
 import { createEngine, Engine } from "ecs/lib/engine";
-import { as, asFlag, define } from "ecs/lib/component";
+import { As, define } from "ecs/lib/component";
 
 let engine: Engine;
 
@@ -9,11 +9,11 @@ interface Vector2D {
 }
 
 const { position, velocity } = define({
-  position: as<Vector2D>(),
-  velocity: as<Vector2D>(),
+  position: As.a<Vector2D>(),
+  velocity: As.a<Vector2D>(),
 });
-const { render } = define({ render: asFlag() });
-const { history } = define({ history: as<string>() });
+const { render } = define({ render: As.aFlag() });
+const { history } = define({ history: As.a<string>() });
 
 let updates = { num: 0 };
 

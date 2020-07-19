@@ -1,8 +1,8 @@
-import { createEngine, Engine } from "./engine";
-import { Entity } from "./entity";
-import { dirty, fireDamage, hp, poisonDamage } from "./component.spec.fixture";
-import { StatefulSystem } from "./system";
-import { as, asFlag, define } from "./component";
+import { createEngine, Engine } from './engine';
+import { Entity } from './entity';
+import { dirty, fireDamage, hp, poisonDamage } from './component.spec.fixture';
+import { StatefulSystem } from './system';
+import { As, define } from './component';
 
 describe("A system that acts on a component", () => {
   let engine: Engine;
@@ -180,9 +180,9 @@ describe("A system written as a class", () => {
 });
 
 describe("An engine with multiple systems", () => {
-  const { history } = define({ history: as<string[]>() });
-  const { foo } = define({ foo: asFlag() });
-  const { bar } = define({ bar: asFlag() });
+  const { history } = define({ history: As.a<string[]>() });
+  const { foo } = define({ foo: As.aFlag() });
+  const { bar } = define({ bar: As.aFlag() });
   const engine = createEngine();
   const entity = engine
     .createEntity()
