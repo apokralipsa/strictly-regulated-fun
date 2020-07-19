@@ -22,5 +22,6 @@
     "@types/sinonjs__fake-timers": "^6.0.1",
     "jest": "^26.1.0",
     "ts-jest": "^26.1.1"
-  }
+  },
+  "gitHead": "93a8c257d577d0b5bb63aa094ac00d13648fb79c"
 }
