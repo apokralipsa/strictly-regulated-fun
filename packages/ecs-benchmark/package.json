@@ -1,7 +1,7 @@
 {
   "name": "ecs-benchmark",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.2.0",
   "description": "> TODO: description",
   "author": "Jakub Stawiarski <stawiarskijakub@gmail.com>",
   "homepage": "",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "benchmark": "^2.1.4",
-    "ecs": "^0.0.0",
+    "ecs": "^0.2.0",
     "makr": "^2.1.1"
   },
   "devDependencies": {
