@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "lerna run tsc && lerna bootstrap",
-    "benchmark": "npm run build && lerna run benchmark"
+    "benchmark": "npm run build && lerna run benchmark",
+    "publish": "lerna run tsc && lerna publish"
   }
 }
