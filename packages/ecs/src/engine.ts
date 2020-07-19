@@ -136,7 +136,7 @@ class EntitiesGroupedInViews implements Entities {
     }
   }
 
-  thatHave<Q extends Query>(query: Q): Map<Entity, QueriedState<Q>> {
+  thatHave<Q extends Query>(query: Q): ReadonlyMap<Entity, QueriedState<Q>> {
     return this.viewToMatch(query).getAllEntities();
   }
 

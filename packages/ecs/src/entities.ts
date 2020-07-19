@@ -15,7 +15,7 @@ export type Query = {
 /**
  * The state of the entity.
  * It is guarantied to have data of all the requested components.
- * In can be accessed and modified in a typesafe way
+ * It can be accessed and modified in a typesafe way.
  */
 export type QueriedState<Q extends Query> = {
   [key in keyof Q]: Q[key] extends Component<infer T> ? T : never;
@@ -35,10 +35,10 @@ export interface Entities {
    * }
    *
    *
-   * @return a Map, where each key is an entity and the value is its queried state.
+   * @return a readonly map, where each key is an entity and the value is its queried state.
    * @param query A set of components
    * @see Query
    * @see QueriedState
    */
-  thatHave<Q extends Query>(query: Q): Map<Entity, QueriedState<Q>>;
+  thatHave<Q extends Query>(query: Q): ReadonlyMap<Entity, QueriedState<Q>>;
 }

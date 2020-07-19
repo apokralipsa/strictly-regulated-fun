@@ -58,7 +58,7 @@ export const As = {
   /**
    * Defines the type of a component
    *
-   * @param options Optional component options
+   * @param options Optional. Additional component options.
    */
   a<T>(options: ComponentDefinitionOptions<T> = {}) {
     return options;
@@ -67,7 +67,7 @@ export const As = {
   /**
    * An alias for "As.a<type>".
    *
-   * @param options Optional component options
+   * @param options Optional. Additional component options.
    * @see As.a
    */
   an<T>(options: ComponentDefinitionOptions<T> = {}) {
