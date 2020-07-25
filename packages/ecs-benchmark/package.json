@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "benchmark": "^2.1.4",
-    "ecs": "^0.2.0",
+    "@strictly-regulated-fun/ecs": "^0.2.0",
     "makr": "^2.1.1"
   },
   "devDependencies": {

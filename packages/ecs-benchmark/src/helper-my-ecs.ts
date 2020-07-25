@@ -1,4 +1,4 @@
-import { As, createEngine, define, Engine } from "ecs";
+import { As, createEngine, define, Engine } from '@strictly-regulated-fun/ecs';
 
 let engine: Engine;
 

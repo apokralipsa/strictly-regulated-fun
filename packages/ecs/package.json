@@ -5,7 +5,8 @@
   "author": "Jakub Stawiarski <stawiarskijakub@gmail.com>",
   "homepage": "https://github.com/apokralipsa/strictly-regulated-fun",
   "license": "ISC",
-  "main": "lib/ecs.js",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "directories": {
     "lib": "lib"
   },
