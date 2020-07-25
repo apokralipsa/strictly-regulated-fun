@@ -1,5 +1,7 @@
 import { Component, Flag } from "./component";
 
+type DataOf<C extends Component<any>> = C extends Component<infer T> ? T : never;
+
 /**
  * A separate entity that has its own identity and state.
  */
@@ -14,7 +16,7 @@ export interface Entity {
    *
    * @see System, Component
    */
-  set<T>(component: Component<T>, data: T): Entity;
+  set<C extends Component<any>>(component: C, data: DataOf<C>): Entity;
 
   /**
    * Adds a flag to a component.
@@ -33,7 +35,7 @@ export interface Entity {
    * @throws If the entity does not have this component.
    * @see System, Entities
    */
-  get<T>(component: Component<T>): T;
+  get<C extends Component<any>>(component: C): DataOf<C>;
   has(component: Component<any>): boolean;
   remove(component: Component<any>): Entity;
 }

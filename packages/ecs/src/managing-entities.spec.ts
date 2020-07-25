@@ -21,8 +21,8 @@ describe("Entity", () => {
   it("should return the components it has", () => {
     entity.set(position, { x: 1, y: 1 }).set(velocity, { x: 0, y: 0 });
 
-    const returnedPosition: Readonly<Vector2D> = entity.get(position);
-    const returnedVelocity: Readonly<Vector2D> = entity.get(velocity);
+    const returnedPosition: Vector2D = entity.get(position);
+    const returnedVelocity: Vector2D = entity.get(velocity);
 
     expect(returnedPosition).toEqual({ x: 1, y: 1 });
     expect(returnedVelocity).toEqual({ x: 0, y: 0 });
