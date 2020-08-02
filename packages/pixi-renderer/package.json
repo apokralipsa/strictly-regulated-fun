@@ -18,7 +18,7 @@
     "access": "public"
   },
   "scripts": {
-    "test": "karma",
+    "test": "karma start --single-run=true",
     "tsc": "tsc",
     "audit:fix": "npm i --package-lock-only && npm audit --fix"
   },

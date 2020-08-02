@@ -1,0 +1,38 @@
+{
+  "name": "@strictly-regulated-fun/simple-2d",
+  "version": "0.2.3",
+  "description": "Set of pre-built components and systems to simplify writing 2d games",
+  "author": "Jakub Stawiarski <stawiarskijakub@gmail.com>",
+  "homepage": "https://github.com/apokralipsa/strictly-regulated-fun",
+  "license": "ISC",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apokralipsa/strictly-regulated-fun.git"
+  },
+  "scripts": {
+    "test": "jest --rootDir .",
+    "tsc": "tsc",
+    "audit:fix": "npm i --package-lock-only & npm audit --fix"
+  },
+  "bugs": {
+    "url": "https://github.com/apokralipsa/strictly-regulated-fun/issues"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.8",
+    "jest": "^26.2.2",
+    "ts-jest": "^26.1.4"
+  },
+  "dependencies": {
+    "@strictly-regulated-fun/ecs": "^0.2.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
