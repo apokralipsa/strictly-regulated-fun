@@ -15,6 +15,7 @@
     "lib"
   ],
   "scripts": {
+    "audit:fix": "npm i --package-lock-only && npm audit --fix",
     "tsc": "tsc",
     "benchmark": "tsc && node lib/ecs-benchmark.js"
   },

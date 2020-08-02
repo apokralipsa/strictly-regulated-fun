@@ -19,7 +19,8 @@
   },
   "scripts": {
     "test": "karma",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "audit:fix": "npm i --package-lock-only && npm audit --fix"
   },
   "repository": {
     "type": "git",
