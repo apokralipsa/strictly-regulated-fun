@@ -1,6 +1,6 @@
 {
   "name": "@strictly-regulated-fun/ecs",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "An entity component system library ",
   "author": "Jakub Stawiarski <stawiarskijakub@gmail.com>",
   "homepage": "https://github.com/apokralipsa/strictly-regulated-fun",

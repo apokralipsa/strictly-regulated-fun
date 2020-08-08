@@ -1,6 +1,6 @@
 {
   "name": "@strictly-regulated-fun/simple-2d",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Set of pre-built components and systems to simplify writing 2d games",
   "author": "Jakub Stawiarski <stawiarskijakub@gmail.com>",
   "homepage": "https://github.com/apokralipsa/strictly-regulated-fun",
@@ -30,7 +30,7 @@
     "ts-jest": "^26.1.4"
   },
   "dependencies": {
-    "@strictly-regulated-fun/ecs": "^0.3.0"
+    "@strictly-regulated-fun/ecs": "^0.4.0"
   },
   "publishConfig": {
     "access": "public"
