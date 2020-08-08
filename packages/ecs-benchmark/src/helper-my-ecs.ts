@@ -60,21 +60,27 @@ export const my_ecs = {
 
     const e2 = engine
       .createEntity()
+      .modify()
       .set(position, { x: 1, y: 1 })
-      .set(velocity, { x: 1, y: 1 });
+      .set(velocity, { x: 1, y: 1 })
+      .applyChanges();
 
     const e3 = engine
       .createEntity()
-      .set(position, { x: 1, y: 1 })
-      .set(velocity, { x: 1, y: 1 })
-      .setFlag(render);
-
-    const e4 = engine
-      .createEntity()
+      .modify()
       .set(position, { x: 1, y: 1 })
       .set(velocity, { x: 1, y: 1 })
       .setFlag(render)
-      .set(history, "some history");
+      .applyChanges();
+
+    const e4 = engine
+      .createEntity()
+      .modify()
+      .set(position, { x: 1, y: 1 })
+      .set(velocity, { x: 1, y: 1 })
+      .setFlag(render)
+      .set(history, "some history")
+      .applyChanges();
 
     return [e1, e2, e3, e4];
   },

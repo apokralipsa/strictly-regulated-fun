@@ -1,4 +1,4 @@
-import { Entity } from "./entity";
+import { Entity, GroupedChanges, StateOf } from "./entity";
 import { System } from "./system";
 import { EventEmitter, Events, Subscription } from "./events";
 import { defaultStopwatch, Stopwatch } from "./stopwatch";
@@ -65,11 +65,11 @@ class EmittingEntity implements Entity {
     return this.eventEmitter;
   }
 
-  get<T>(component: Component<T>): T {
+  get<C extends Component<any>>(component: C): StateOf<C> {
     if (!this.has(component)) {
       throw new Error("Entity does not contain the requested component");
     }
-    return this.state[component.componentId] as T;
+    return this.state[component.componentId] as StateOf<C>;
   }
 
   has(component: Component<any>): boolean {
@@ -85,7 +85,7 @@ class EmittingEntity implements Entity {
     return this;
   }
 
-  set<T>(component: Component<T>, data: T): Entity {
+  set<C extends Component<any>>(component: C, data: StateOf<C>): Entity {
     if (this.shouldDoRuntimeChecks) {
       typeCheck(component, data);
     }
@@ -102,6 +102,66 @@ class EmittingEntity implements Entity {
 
   setFlag(flag: Flag): Entity {
     this.set(flag, flagMarker);
+    return this;
+  }
+
+  modify(): GroupedChanges {
+    return new UnitOfWork(this);
+  }
+
+  withApplied(changes: UnitOfWork): Entity {
+    const changesResult = Object.entries(changes.updatedState).reduce(
+      (result, [component, newState]) => {
+        if (newState === null && this.state[component]) {
+          delete this.state[component];
+          return { ...result, removedComponents: true };
+        } else if (this.state[component] === undefined) {
+          this.state[component] = newState;
+          return { ...result, addedComponents: true };
+        } else {
+          this.state[component] = newState;
+          return result;
+        }
+      },
+      { addedComponents: false, removedComponents: false }
+    );
+
+    if (changesResult.removedComponents) {
+      this.eventEmitter.emit("componentRemoved");
+    }
+
+    if (changesResult.addedComponents) {
+      this.eventEmitter.emit("componentAdded");
+    }
+
+    return this;
+  }
+}
+
+class UnitOfWork implements GroupedChanges {
+  updatedState: EntityState = {};
+
+  constructor(private entity: EmittingEntity) {}
+
+  applyChanges(): Entity {
+    return this.entity.withApplied(this);
+  }
+
+  remove(component: Component<any>): GroupedChanges {
+    this.updatedState[component.componentId] = null;
+    return this;
+  }
+
+  set<C extends Component<any>>(
+    component: C,
+    data: StateOf<C>
+  ): GroupedChanges {
+    this.updatedState[component.componentId] = data;
+    return this;
+  }
+
+  setFlag(flag: Flag): GroupedChanges {
+    this.updatedState[flag.componentId] = flagMarker;
     return this;
   }
 }

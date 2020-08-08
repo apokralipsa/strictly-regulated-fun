@@ -5,7 +5,7 @@ This lib has no external dependencies.
 Makes heavy usage of TypeScript types system.
 The focus of the design is to provide the maximum type safety and developer support while not sacrificing any execution speed.
 
-## Usage (TL;DR version)
+# Usage (TL;DR version)
 
 ```typescript
 interface Vector2D {
@@ -44,9 +44,18 @@ while (shouldRun) {
 }
 ```
 
-## Usage
+# Usage
 
-### Creating engines
+## Table of contents
+
+1. [Creating engines](#creating-engines)
+1. [Defining components](#defining-components)
+1. [Managing entities](#managing-entities)
+1. [Defining systems](#defining-systems)
+1. [Additional config](#additional-config)
+
+
+## Creating engines
 
 Engines are the central part of the library.
 Using engines you will create and remove entities and define systems that act on them.
@@ -55,7 +64,12 @@ Use the `createEngine` function to create engines.
 You may pass a `Partial<EngineConfig>` object to set some or all of the config values.
 See: [Type checks at runtime](#type-checks-at-runtime), [Measuring the passage of time](#measuring-the-passage-of-time)
 
-### Defining components
+#### The 'tick' method
+
+Use the 'tick' method of the engine to run all defined systems once.
+You will most likely want to call it once every frame.
+
+## Defining components
 
 Components define the types of data your entities can hold as their state.
 Components can also be used to find entities on which a given system is to act.
@@ -73,11 +87,11 @@ This syntax allows the compiler to catch errors where the component name would b
 
 ```typescript
 // Component name mismatch
-const { hp } = define({ healthPoints: As.a<number>() }); // TS2339: Property 'hp' does not exist on type 'Result  ; }>'.
+const { hp } = define({ healthPoints: As.a<number>() }); // TS2339: Property 'hp' does not exist on type 'DefinedComponents{ healthPoints: ComponentDefinitionOptions ; }>'.
 
 // Missing destructuring
 const hp = define({ hp: As.a<number>() });
-createEngine().createEntity().set(hp, 42); // TS2345: Argument of type 'Result<number, { hp: ComponentDefinitionOptions<number>; }>' is not assignable to parameter of type 'Component<number>'.   Property 'componentId' is missing in type 'Result<number, { hp: ComponentDefinitionOptions<number>; }>' but required in type 'Component<number>'.
+createEngine().createEntity().set(hp, 42); // TS2345: Argument of type 'DefinedComponents<{ hp: ComponentDefinitionOptions<number>; }>' is not assignable to parameter of type 'Component<any>'.
 ```
 
 In many cases you will want to store more state in a single component.
@@ -102,7 +116,7 @@ const { hp, position, velocity } = define({
 });
 ```
 
-### Defining flags
+#### Defining flags
 
 You may also create components that do not hold state at all.
 You can use those components (called flags here) to find entities later on.
@@ -113,12 +127,12 @@ const { rendered } = define({ rendered: As.aFlag() });
 
 You do not need to specify the type of the data held in the flag.
 
-### Manually defining components
+#### Manually defining components
 As the `Component<T>` interface is quite simple you might be tempted to manually create `type`s that use it
 or `interface`s that extend it. **This approach is not recommended as you will lose compile type checks that
 validate internal component ids. You may run into undefined behaviour then.** 
 
-### Managing entities
+## Managing entities
 
 Use the `engine` to create entities.
 Once you have an entity you can add / remove state to / from it using the `set`, `setFlag` and `remove` methods.
@@ -145,7 +159,24 @@ At some point you may want to remove the entities.
 engine.remove(myEntity);
 ```
 
-### Defining systems
+#### Modifying the state of multiple components
+For a small performance boost you may choose to wrap changes to multiple components in a single operation.
+To do that, add the `modify` / `applyChanges` combination. 
+
+```typescript
+engine
+  .createEntity()
+  .modify() // marks the start of multiple changes that should be done in a single step
+  .set(hp, 42)
+  .set(fireDamage, 5)
+  .set(poisonDamage, 2)
+  .applyChanges(); // applies all the changes
+```
+ 
+Note, that the changes will be done lazily.
+No changes will be made if you omit the `applyChanges` call.
+
+## Defining systems
 
 System set up the logic and behaviour that act on the components held in entities.
 The simplest way to define a system is to pass an object to `defineSystem` method on an engine.
@@ -187,18 +218,15 @@ class PoisonDamageSystem extends StatefulSystem {
 createEngine().defineSystem(new PoisonDamageSystem());
 ```
 
-### Mutating entity state
+#### Mutating entity state
 
 As you can see in the section above you can directly modify the state of the queried object.
 **This is much cheaper in terms of performance than calling the `set` method.**
 Use this method whenever you don't need to explicitly add a new component to an entity.
 
-### The 'tick' method
+## Additional config
 
-Use the 'tick' method of the engine to run all defined systems once.
-You will most likely want to call it once every frame.
-
-### Type checks at runtime
+#### Type checks at runtime
 
 In most cases compile time checks are enough to provide reasonable type safety.
 
@@ -236,7 +264,7 @@ To do that you need to pass a config value when creating an engine:
 const myEngine = createEngine({ typeChecks: false });
 ```
 
-### Measuring the passage of time
+#### Measuring the passage of time
 
 The engine queries an implementation of the `Stopwatch` interface once for each call of `tick()` method.
 A stopwatch can be passed when creating an engine. Default value uses the `Date` class and returns delta time in milliseconds.

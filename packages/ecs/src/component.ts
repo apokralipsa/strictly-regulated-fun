@@ -25,7 +25,7 @@ interface ComponentsToDefine<T> {
   [id: string]: ComponentDefinitionOptions<T>;
 }
 
-type Result<C extends ComponentsToDefine<any>> = {
+type DefinedComponents<C extends ComponentsToDefine<any>> = {
   [id in keyof C]: C[id] extends ComponentDefinitionOptions<infer T>
     ? Component<T>
     : never;
@@ -41,7 +41,7 @@ type Result<C extends ComponentsToDefine<any>> = {
  */
 export function define<C extends ComponentsToDefine<any>>(
   componentsToDefine: C
-): Result<C> {
+): DefinedComponents<C> {
   const entries = Object.entries(componentsToDefine);
 
   const definedComponents = entries.map(([id, options]) => {
