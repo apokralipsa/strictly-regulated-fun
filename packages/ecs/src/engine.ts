@@ -1,8 +1,9 @@
-import { Entity } from './entity';
-import { System } from './system';
-import { defaultStopwatch, Stopwatch } from './stopwatch';
-import { Entities, QueriedState, Query } from './entities';
-import { Component, Flag } from './component';
+import { Entity } from "./entity";
+import { System } from "./system";
+import { EventEmitter, Events, Subscription } from "./events";
+import { defaultStopwatch, Stopwatch } from "./stopwatch";
+import { Entities, QueriedState, Query } from "./entities";
+import { Component, Flag } from "./component";
 
 /**
  * Central class of the library.
@@ -49,18 +50,24 @@ type EntityState = {
   [key: string]: any;
 };
 
-class ViewsAwareEntity implements Entity {
-  state: EntityState = {};
+type EntityEventType = "componentAdded" | "componentRemoved";
 
-  constructor(
-    private views: EntitiesGroupedInViews,
-    private shouldDoRuntimeChecks: boolean
-  ) {
+class EmittingEntity implements Entity {
+  state: EntityState = {};
+  private readonly eventEmitter = new EventEmitter<
+    EntityEventType,
+    EmittingEntity
+  >(this);
+
+  constructor(private shouldDoRuntimeChecks: boolean) {}
+
+  events(): Events<EntityEventType, EmittingEntity> {
+    return this.eventEmitter;
   }
 
   get<T>(component: Component<T>): T {
     if (!this.has(component)) {
-      throw new Error('Entity does not contain the requested component');
+      throw new Error("Entity does not contain the requested component");
     }
     return this.state[component.componentId] as T;
   }
@@ -73,7 +80,7 @@ class ViewsAwareEntity implements Entity {
     const hadComponent = this.has(component);
     if (hadComponent) {
       delete this.state[component.componentId];
-      this.views.componentRemovedFrom(this);
+      this.eventEmitter.emit("componentRemoved");
     }
     return this;
   }
@@ -87,7 +94,7 @@ class ViewsAwareEntity implements Entity {
     this.state[component.componentId] = data;
 
     if (isNewComponent) {
-      this.views.componentAddedTo(this);
+      this.eventEmitter.emit("componentAdded");
     }
 
     return this;
@@ -99,45 +106,42 @@ class ViewsAwareEntity implements Entity {
   }
 }
 
-class EntitiesGroupedInViews implements Entities {
-  private entityViews = new Map<Entity, Set<View<any>>>();
+type EntitySubscription = Subscription<EntityEventType, EmittingEntity>;
+
+class EntityViews implements Entities {
+  private allEntities: Set<EmittingEntity> = new Set<EmittingEntity>();
   private allViews: View<any>[] = [];
+  private subscriptions: Map<EmittingEntity, EntitySubscription> = new Map();
+
+  add(newEntity: EmittingEntity) {
+    this.informAllViewsAbout(newEntity);
+    this.allEntities.add(newEntity);
+
+    const subscription = newEntity
+      .events()
+      .subscribeTo("componentAdded", (event) =>
+        this.informAllViewsAbout(event.source)
+      );
+
+    this.subscriptions.set(newEntity, subscription);
+  }
 
   viewToMatch<Q extends Query>(query: Q): View<Q> {
     return this.existingViewToHandle(query) || this.newViewToHandle(query);
   }
 
-  add(entity: ViewsAwareEntity) {
-    this.entityViews.set(entity, new Set());
-  }
-
-  remove(entity: ViewsAwareEntity) {
-    for (const view of this.entityViews.get(entity)!) {
-      view.remove(entity);
-    }
-
-    this.entityViews.delete(entity);
-  }
-
-  componentAddedTo(entity: ViewsAwareEntity) {
-    for (const view of this.allViews) {
-      if (view.test(entity)) {
-        this.entityViews.get(entity)!.add(view);
-      }
-    }
-  }
-
-  componentRemovedFrom(entity: ViewsAwareEntity) {
-    const containingViews = this.entityViews.get(entity)!;
-    for (const view of containingViews) {
-      if (!view.retest(entity)) {
-        containingViews.delete(view);
-      }
-    }
+  remove(entity: EmittingEntity) {
+    this.allViews.forEach((view) => view.remove(entity));
+    this.allEntities.delete(entity);
+    this.subscriptions.delete(entity);
   }
 
   thatHave<Q extends Query>(query: Q): ReadonlyMap<Entity, QueriedState<Q>> {
     return this.viewToMatch(query).getAllEntities();
+  }
+
+  private informAllViewsAbout(entity: EmittingEntity) {
+    this.allViews.forEach((view) => view.addIfMatches(entity));
   }
 
   private existingViewToHandle<Q extends Query>(query: Q): View<Q> | undefined {
@@ -147,10 +151,8 @@ class EntitiesGroupedInViews implements Entities {
   private newViewToHandle<Q extends Query>(query: Q): View<Q> {
     const newView = new View<Q>(query);
 
-    for (const entity of this.entityViews.keys()) {
-      if (newView.test(entity as ViewsAwareEntity)) {
-        this.entityViews.get(entity)!.add(newView);
-      }
+    for (const entity of this.allEntities) {
+      newView.addIfMatches(entity as EmittingEntity);
     }
 
     this.allViews.push(newView);
@@ -159,7 +161,8 @@ class EntitiesGroupedInViews implements Entities {
 }
 
 class View<Q extends Query> {
-  private readonly result: Map<Entity, QueriedState<Q>> = new Map<Entity, QueriedState<Q>>();
+  private readonly result: Map<Entity, QueriedState<Q>> = new Map();
+  private readonly subscriptions: Map<Entity, EntitySubscription> = new Map();
   private readonly componentIds: string[];
 
   constructor(private query: Query) {
@@ -178,26 +181,22 @@ class View<Q extends Query> {
     return this.result;
   }
 
-  test(entity: ViewsAwareEntity): boolean {
+  addIfMatches(entity: EmittingEntity) {
     if (this.queryIsMatchedBy(entity.state)) {
       this.result.set(entity, entity.state);
-      return true;
-    }
+      const subscription = entity
+        .events()
+        .subscribeTo("componentRemoved", (event) =>
+          this.removeIfNoLongerMatches(event.source)
+        );
 
-    return false;
+      this.subscriptions.set(entity, subscription);
+    }
   }
 
-  retest(entity: ViewsAwareEntity): boolean {
-    if (!this.queryIsMatchedBy(entity.state)) {
-      this.remove(entity);
-      return false;
-    }
-
-    return true;
-  }
-
-  remove(entity: ViewsAwareEntity): void {
+  remove(entity: EmittingEntity): void {
     this.result.delete(entity);
+    this.subscriptions.delete(entity);
   }
 
   private queryIsMatchedBy(state: EntityState): state is QueriedState<Q> {
@@ -207,19 +206,24 @@ class View<Q extends Query> {
   }
 
   private componentIdsIn(query: Query) {
-    return Object.values(query).map(component => component.componentId);
+    return Object.values(query).map((component) => component.componentId);
+  }
+
+  private removeIfNoLongerMatches(entity: EmittingEntity) {
+    if (!this.queryIsMatchedBy(entity.state)) {
+      this.remove(entity);
+    }
   }
 }
 
 class ViewBasedEngine implements Engine {
-  private entities = new EntitiesGroupedInViews();
+  private entities = new EntityViews();
   private systems: System[] = [];
 
-  constructor(private config: EngineConfig) {
-  }
+  constructor(private config: EngineConfig) {}
 
   createEntity(): Entity {
-    let newEntity = new ViewsAwareEntity(this.entities, this.config.typeChecks);
+    let newEntity = new EmittingEntity(this.config.typeChecks);
     this.entities.add(newEntity);
     return newEntity;
   }
@@ -230,7 +234,7 @@ class ViewBasedEngine implements Engine {
   }
 
   remove(entity: Entity): Engine {
-    this.entities.remove(entity as ViewsAwareEntity);
+    this.entities.remove(entity as EmittingEntity);
     return this;
   }
 

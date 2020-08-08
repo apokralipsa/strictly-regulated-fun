@@ -3,6 +3,10 @@
   "compilerOptions": {
     "outDir": "./lib"
   },
+  "lib": [
+    "es2019",
+    "dom"
+  ],
   "exclude": [
     "node_modules",
     "./lib",
