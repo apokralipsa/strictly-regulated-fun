@@ -6,6 +6,7 @@ import { As, define } from '@strictly-regulated-fun/ecs';
 export const simple2dComponents = define({
   position: As.a<Point>(),
   velocity: As.a<Vector>(),
+  maximumVelocity: As.a<number>(),
   acceleration: As.a<Vector>(),
   rotation: As.an<Angle>(),
   angularVelocity: As.an<Angle>(),

@@ -15,7 +15,7 @@ describe("Angular acceleration system", () => {
     engine.defineSystem(angularAccelerationSystem);
   });
 
-  it("should move entities", () => {
+  it("should calculate the new angular velocity", () => {
     //given
     const entity = engine
       .createEntity()
