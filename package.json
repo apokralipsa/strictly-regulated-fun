@@ -8,9 +8,12 @@
     "@types/jest": "^26.0.4"
   },
   "scripts": {
-    "build": "lerna run tsc && lerna bootstrap",
+    "lerna": "lerna",
+    "bootstrap": "lerna bootstrap --hoist",
+    "build": "lerna run tsc",
     "benchmark": "npm run build && lerna run benchmark",
     "publish": "lerna run tsc && lerna publish",
-    "audit": "lerna run audit:fix && lerna bootstrap"
+    "audit": "lerna run audit:fix",
+    "test": "lerna run test --stream"
   }
 }
