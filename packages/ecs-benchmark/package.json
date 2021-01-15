@@ -1,7 +1,7 @@
 {
   "name": "ecs-benchmark",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "> TODO: description",
   "author": "Jakub Stawiarski <stawiarskijakub@gmail.com>",
   "homepage": "",
@@ -20,7 +20,7 @@
     "benchmark": "tsc && node lib/ecs-benchmark.js"
   },
   "dependencies": {
-    "@strictly-regulated-fun/ecs": "^0.4.0",
+    "@strictly-regulated-fun/ecs": "^0.4.1",
     "benchmark": "^2.1.4",
     "makr": "^2.1.1"
   },
