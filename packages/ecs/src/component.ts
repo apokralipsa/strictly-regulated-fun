@@ -1,5 +1,7 @@
 type TypeGuard<T> = (input: any) => input is T;
 
+const componentId = Symbol.for('componentId');
+
 /**
  * A piece of state that can be added to an Entity.
  * Entities can be filtered by the Components they have.
@@ -7,7 +9,7 @@ type TypeGuard<T> = (input: any) => input is T;
  * @param <T> the type of data stored by this component
  */
 export interface Component<T> {
-  readonly componentId: string;
+  readonly [componentId]: string;
   readonly typeGuard?: TypeGuard<T>;
 }
 
@@ -45,7 +47,7 @@ export function define<C extends ComponentsToDefine<any>>(
   const entries = Object.entries(componentsToDefine);
 
   const definedComponents = entries.map(([id, options]) => {
-    return [id, { componentId: id, ...options }];
+    return [id, { [componentId]: id, ...options }];
   });
 
   return Object.fromEntries(definedComponents);

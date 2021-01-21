@@ -1,6 +1,16 @@
-import { Entity } from './entity';
-import { createEngine } from './engine';
-import { dirty, fireDamage, hp, position, strictPosition, unknownComponent, Vector2D, velocity } from './component.spec.fixture';
+import { Entity } from "./entity";
+import { createEngine } from "./engine";
+import {
+  dirty,
+  fireDamage,
+  hp,
+  position,
+  strictPosition,
+  unknownComponent,
+  Vector2D,
+  velocity,
+} from "./component.spec.fixture";
+import { Component } from './component';
 
 describe("Entity", () => {
   const incorrectDataInJson = JSON.stringify({ foo: "bar" });
@@ -51,5 +61,11 @@ describe("Entity", () => {
 
     expect(entity.has(dirty)).toBe(true);
     expect(() => entity.get(dirty)).not.toThrow();
+  });
+
+  it('should throw a meaningful error when passed an invalid component', () => {
+    const invalidComponent = {} as Component<any>;
+
+    expect(() => entity.set(invalidComponent, 'foobar')).toThrow(/.*define./);
   });
 });

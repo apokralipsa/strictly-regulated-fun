@@ -128,9 +128,14 @@ const { rendered } = define({ rendered: As.aFlag() });
 You do not need to specify the type of the data held in the flag.
 
 #### Manually defining components
-As the `Component<T>` interface is quite simple you might be tempted to manually create `type`s that use it
-or `interface`s that extend it. **This approach is not recommended as you will lose compile type checks that
-validate internal component ids. You may run into undefined behaviour then.** 
+In previous versions it was possible to create a component manually without using the `define` function.
+That was unsupported and would lead to undefined behaviour.
+
+In the current version trying to set such a component causes an explicit error to be thrown.
+```
+const invalidComponent = {} as Component<any>;
+entity.set(invalidComponent, "foobar"); // throws a runtime error
+```
 
 ## Managing entities
 

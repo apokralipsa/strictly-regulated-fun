@@ -5,6 +5,8 @@ import { defaultStopwatch, Stopwatch } from "./stopwatch";
 import { Entities, QueriedState, Query } from "./entities";
 import { Component, Flag } from "./component";
 
+const id = Symbol.for('componentId');
+
 /**
  * Central class of the library.
  * Use an Engine to create / remove entities and define systems.
@@ -69,29 +71,33 @@ class EmittingEntity implements Entity {
     if (!this.has(component)) {
       throw new Error("Entity does not contain the requested component");
     }
-    return this.state[component.componentId] as StateOf<C>;
+    return this.state[component[id]] as StateOf<C>;
   }
 
   has(component: Component<any>): boolean {
-    return this.state.hasOwnProperty(component.componentId);
+    return this.state.hasOwnProperty(component[id]);
   }
 
   remove(component: Component<any>): Entity {
     const hadComponent = this.has(component);
     if (hadComponent) {
-      delete this.state[component.componentId];
+      delete this.state[component[id]];
       this.eventEmitter.emit("componentRemoved");
     }
     return this;
   }
 
   set<C extends Component<any>>(component: C, data: StateOf<C>): Entity {
+    if(!component[id]){
+      throw new Error('Could not set a component on a entity because it was invalid. Did you create it using the `define` function?');
+    }
+
     if (this.shouldDoRuntimeChecks) {
       typeCheck(component, data);
     }
 
     const isNewComponent = !this.has(component);
-    this.state[component.componentId] = data;
+    this.state[component[id]] = data;
 
     if (isNewComponent) {
       this.eventEmitter.emit("componentAdded");
@@ -148,7 +154,7 @@ class UnitOfWork implements GroupedChanges {
   }
 
   remove(component: Component<any>): GroupedChanges {
-    this.updatedState[component.componentId] = null;
+    this.updatedState[component[id]] = null;
     return this;
   }
 
@@ -156,12 +162,12 @@ class UnitOfWork implements GroupedChanges {
     component: C,
     data: StateOf<C>
   ): GroupedChanges {
-    this.updatedState[component.componentId] = data;
+    this.updatedState[component[id]] = data;
     return this;
   }
 
   setFlag(flag: Flag): GroupedChanges {
-    this.updatedState[flag.componentId] = flagMarker;
+    this.updatedState[flag[id]] = flagMarker;
     return this;
   }
 }
@@ -266,7 +272,7 @@ class View<Q extends Query> {
   }
 
   private componentIdsIn(query: Query) {
-    return Object.values(query).map((component) => component.componentId);
+    return Object.values(query).map((component) => component[id]);
   }
 
   private removeIfNoLongerMatches(entity: EmittingEntity) {
