@@ -1,7 +1,7 @@
 {
   "name": "@strictly-regulated-fun/pixi-renderer",
   "private": true,
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "A renderer system using PixiJS",
   "author": "Jakub Stawiarski <stawiarskijakub@gmail.com>",
   "homepage": "https://github.com/apokralipsa/strictly-regulated-fun",
@@ -30,7 +30,7 @@
     "url": "https://github.com/apokralipsa/strictly-regulated-fun/issues"
   },
   "dependencies": {
-    "@strictly-regulated-fun/ecs": "^0.4.1",
+    "@strictly-regulated-fun/ecs": "^0.5.0",
     "pixi.js": "^5.3.2"
   },
   "devDependencies": {
